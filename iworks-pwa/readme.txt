@@ -4,7 +4,7 @@ Donate link: https://ko-fi.com/iworks?utm_source=iworks-pwa&utm_medium=readme-do
 Tags: PWA, Progressive Web Application, progressive web app, progressive, manifest.json
 Requires at least: 6.0
 Tested up to: 6.6
-Stable tag: 1.6.4
+Stable tag: 1.6.5
 Requires PHP: 8.0
 License: GPLv3 or later
 
@@ -102,6 +102,10 @@ A2HS is supported in all mobile browsers, except iOS web view. It's also support
 1. Shortcuts menu on Android.
 
 == Changelog ==
+
+= 1.6.5 (2024-11-12) =
+* Detailed explanation for missing `manifest.json` and `ieconfig.xml` requests where been added. [#2](https://github.com/iworks/iworks-pwa/issues/2)
+* Wrong `purpose` value has been fixed. Props for [vitalii-work](https://github.com/vitalii-work). [#6](https://github.com/iworks/iworks-pwa/issues/6)
 
 = 1.6.4 (2024-10-01) =
 * Ability to upload SVG file has been removed due to Stored Cross-Site Scripting vulnerability. We recommended to install [Safe SVG](https://wordpress.org/plugins/safe-svg/) to allow upload SVG files. Props for discovering and reporting for [Francesco Carlucci](https://francescocarlucci.com/).
