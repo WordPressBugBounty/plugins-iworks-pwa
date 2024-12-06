@@ -3,7 +3,7 @@ defined( 'ABSPATH' ) || exit; // Exit if accessed directly
 /**
  * iWorks_Rate - Dashboard Notification module.
  *
- * @version 2.2.0
+ * @version 2.2.1
  * @author  iworks (Marcin Pietrzak)
  *
  */
@@ -16,7 +16,7 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 		 * @since 1.0.1
 		 * @var   string
 		 */
-		private $version = '2.2.0';
+		private $version = '2.2.1';
 
 		/**
 		 * $wpdb->options field name.
@@ -438,6 +438,16 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 		 * @since 2.0.1
 		 */
 		private function get_plugin_data_by_plugin_id( $plugin_id ) {
+			if ( ! isset( $this->plugins[ $plugin_id ] ) ) {
+				return new WP_Error(
+					'no-plugin',
+					/* translators: %s: plugin id */
+					sprintf(
+						esc_html__( 'There is no plugin with id: %s.', 'iworks-pwa' ),
+						$plugin_id
+					)
+				);
+			}
 			$plugin              = wp_parse_args(
 				$this->plugins[ $plugin_id ],
 				$this->stored[ $plugin_id ]
@@ -510,7 +520,10 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 			}
 			$this->enqueue();
 			$plugin = $this->get_plugin_data_by_plugin_id( $plugin_id );
-			$file   = $this->get_file( 'support', 'widgets' );
+			if ( is_wp_error( $plugin ) ) {
+				return $content;
+			}
+			$file = $this->get_file( 'support', 'widgets' );
 			ob_start();
 			load_template( $file, true, $plugin );
 			$content = ob_get_contents();
@@ -528,7 +541,10 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 			}
 			$this->enqueue();
 			$plugin = $this->get_plugin_data_by_plugin_id( $plugin_id );
-			$file   = $this->get_file( 'donate', 'widgets' );
+			if ( is_wp_error( $plugin ) ) {
+				return $content;
+			}
+			$file = $this->get_file( 'donate', 'widgets' );
 			ob_start();
 			load_template( $file, true, $plugin );
 			$content = ob_get_contents();
