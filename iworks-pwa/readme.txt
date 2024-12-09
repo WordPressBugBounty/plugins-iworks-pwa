@@ -4,7 +4,7 @@ Donate link: https://ko-fi.com/iworks?utm_source=iworks-pwa&utm_medium=readme-do
 Tags: PWA, Progressive Web Application, progressive web app, progressive, manifest.json
 Requires at least: 6.0
 Tested up to: 6.7
-Stable tag: 1.6.6
+Stable tag: 1.6.7
 Requires PHP: 8.0
 License: GPLv3 or later
 
@@ -102,6 +102,9 @@ A2HS is supported in all mobile browsers, except iOS web view. It's also support
 1. Shortcuts menu on Android.
 
 == Changelog ==
+
+= 1.6.7 (2024-12-09) =
+* Loading integrations action has been fixed.
 
 = 1.6.6 (2024-12-06) =
 * Few "translators" comments where been added.[#9](https://github.com/iworks/iworks-pwa/issues/9)

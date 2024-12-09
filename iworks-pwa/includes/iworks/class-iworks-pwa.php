@@ -29,7 +29,7 @@ abstract class iWorks_PWA {
 
 	protected $debug = false;
 
-	protected $version = '1.6.6';
+	protected $version = '1.6.7';
 
 	protected $root = '';
 
@@ -112,10 +112,10 @@ abstract class iWorks_PWA {
 		 *
 		 * @since 1.2.0
 		 */
-		add_action( 'plugins_loaded', array( $this, 'maybe_load_integrations' ) );
 		add_action( 'init', array( $this, 'action_load_plugin_textdomain' ), 0 );
 		add_action( 'init', array( $this, 'action_init_setup' ) );
 		add_action( 'init', array( $this, 'action_init_register_iworks_rate' ), PHP_INT_MAX );
+		add_action( 'init', array( $this, 'maybe_load_integrations' ), 117 );
 		/**
 		 * clear cache
 		 *
@@ -205,7 +205,7 @@ abstract class iWorks_PWA {
 			$value = apply_filters(
 				'iworks_pwa_configuration',
 				array(
-					'plugin'           => 'PWA — easy way to Progressive Web App - 1.6.6',
+					'plugin'           => 'PWA — easy way to Progressive Web App - 1.6.7',
 					'id'               => $this->get_configuration_app_id(),
 					'name'             => $this->get_configuration_name(),
 					'short_name'       => $this->get_configuration_short_name(),
@@ -808,7 +808,7 @@ abstract class iWorks_PWA {
 			'%s/%s/%s',
 			$this->settings_cache_option_name,
 			$name,
-			'1.6.6' === $this->version ? crc32( time() ) : $this->version
+			'1.6.7' === $this->version ? crc32( time() ) : $this->version
 		);
 	}
 
