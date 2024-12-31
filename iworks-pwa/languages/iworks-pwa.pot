@@ -2,7 +2,7 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: PWA — simple way to Progressive Web App 1.6.7\n"
+"Project-Id-Version: PWA — simple way to Progressive Web App 1.6.8\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/iworks-pwa\n"
 "POT-Creation-Date: 2024-12-06 17:50:43+00:00\n"
 "MIME-Version: 1.0\n"
