@@ -1,7 +1,7 @@
 <?php
 
 /*
-Copyright 2021-2024 Marcin Pietrzak (marcin@iworks.pl)
+Copyright 2021-2025 Marcin Pietrzak (marcin@iworks.pl)
 
 this program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as
@@ -29,7 +29,7 @@ abstract class iWorks_PWA {
 
 	protected $debug = false;
 
-	protected $version = '1.6.8';
+	protected $version = '1.6.9';
 
 	protected $root = '';
 
@@ -112,7 +112,6 @@ abstract class iWorks_PWA {
 		 *
 		 * @since 1.2.0
 		 */
-		add_action( 'init', array( $this, 'action_load_plugin_textdomain' ), 0 );
 		add_action( 'init', array( $this, 'action_init_setup' ) );
 		add_action( 'init', array( $this, 'action_init_register_iworks_rate' ), PHP_INT_MAX );
 		add_action( 'init', array( $this, 'maybe_load_integrations' ), 117 );
@@ -123,6 +122,14 @@ abstract class iWorks_PWA {
 		 */
 		add_action( 'load-settings_page_iworks_pwa_index', array( $this, 'action_cache_clear' ) );
 		add_action( 'wp_update_nav_menu', array( $this, 'action_cache_clear' ) );
+		/**
+		 * load github class
+		 */
+		$filename = __DIR__ . '/pwa/class-iworks-pwa-github.php';
+		if ( is_file( $filename ) ) {
+			include_once $filename;
+			new iworks_pwa_github();
+		}
 	}
 
 	/**
@@ -134,7 +141,7 @@ abstract class iWorks_PWA {
 		/**
 		 * set options
 		 */
-		$this->options = get_iworks_pwa_options();
+		$this->options = iworks_pwa_get_options();
 		$this->_set_configuration();
 		/**
 		 * clear cache
@@ -187,7 +194,10 @@ abstract class iWorks_PWA {
 			__CLASS__,
 			$this->url . '/assets/scripts/admin.js',
 			array(),
-			$this->version
+			$this->version,
+			array(
+				'in_footer' => true,
+			),
 		);
 	}
 
@@ -205,7 +215,7 @@ abstract class iWorks_PWA {
 			$value = apply_filters(
 				'iworks_pwa_configuration',
 				array(
-					'plugin'           => 'PWA — easy way to Progressive Web App - 1.6.8',
+					'plugin'           => 'PWA — easy way to Progressive Web App - 1.6.9',
 					'id'               => $this->get_configuration_app_id(),
 					'name'             => $this->get_configuration_name(),
 					'short_name'       => $this->get_configuration_short_name(),
@@ -808,7 +818,7 @@ abstract class iWorks_PWA {
 			'%s/%s/%s',
 			$this->settings_cache_option_name,
 			$name,
-			'1.6.8' === $this->version ? crc32( time() ) : $this->version
+			'1.6.9' === $this->version ? crc32( time() ) : $this->version
 		);
 	}
 
@@ -860,16 +870,4 @@ abstract class iWorks_PWA {
 		);
 	}
 
-	/**
-	 * i18n
-	 *
-	 * @since 1.6.6
-	 */
-	public function action_load_plugin_textdomain() {
-		load_plugin_textdomain(
-			'iworks-pwa',
-			false,
-			plugin_basename( $this->root ) . '/languages'
-		);
-	}
 }

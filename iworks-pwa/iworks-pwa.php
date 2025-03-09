@@ -4,13 +4,13 @@ Plugin Name: PWA — simple way to Progressive Web App
 Text Domain: iworks-pwa
 Plugin URI: https://github.com/iworks/iworks-pwa
 Description: Your easy way to Progressive Web Application.
-Version: 1.6.8
+Version: 1.6.9
 Author: Marcin Pietrzak
 Author URI: http://iworks.pl/
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Copyright 2021-2024 Marcin Pietrzak (marcin@iworks.pl)
+Copyright 2021-2025 Marcin Pietrzak (marcin@iworks.pl)
 
 this program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as
@@ -82,7 +82,7 @@ if ( is_admin() ) {
 global $iworks_pwa_options;
 $iworks_pwa_options = null;
 
-function get_iworks_pwa_options() {
+function iworks_pwa_get_options() {
 	global $iworks_pwa_options;
 	if ( is_object( $iworks_pwa_options ) ) {
 		return $iworks_pwa_options;

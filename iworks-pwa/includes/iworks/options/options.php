@@ -3,13 +3,13 @@
 Class Name: iWorks Options
 Class URI: http://iworks.pl/
 Description: Option class to manage options.
-Version: 2.9.2
+Version: 2.9.7
 Author: Marcin Pietrzak
 Author URI: http://iworks.pl/
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Copyright 2011-2023 Marcin Pietrzak (marcin@iworks.pl)
+Copyright 2011-2025 Marcin Pietrzak (marcin@iworks.pl)
 
 this program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License, version 2, as
@@ -34,7 +34,12 @@ if ( class_exists( 'iworks_options' ) ) {
 
 class iworks_options {
 
-	private $options;
+	/**
+	 * Core options.
+	 *
+	 * @since 1.0.0
+	 */
+	private array $options;
 	private $option_function_name;
 	private $option_group;
 	private $option_prefix;
@@ -76,7 +81,7 @@ class iworks_options {
 		 * basic setup
 		 */
 		$this->notices              = array();
-		$this->version              = '2.9.2';
+		$this->version              = '2.9.7';
 		$this->option_group         = 'index';
 		$this->option_function_name = null;
 		$this->option_prefix        = null;
@@ -425,17 +430,61 @@ class iworks_options {
 				if ( isset( $option['related_to'] ) && isset( $related_to[ $option['related_to'] ] ) && $related_to[ $option['related_to'] ] == 0 ) {
 					$classes[] = 'hidden';
 				}
+				/**
+				 * Allow to add code before the TR HTML tag.
+				 *
+				 * @since 2.8.3
+				 *
+				 * @param string $content Content, default empty string.
+				 * @param array $option Current option array.
+				 */
+				$content .= apply_filters( 'iworks/options/filter/tr/before/' . $option_name, '', $option );
+				$content .= PHP_EOL;
 				$content .= sprintf(
 					'<tr valign="top" id="tr_%s" class="%s">',
 					esc_attr( $option_name ? $option_name : '' ),
 					esc_attr( implode( ' ', $tr_classes ) )
 				);
-				$content .= sprintf(
-					'<th scope="row">%s%s</th>',
-					isset( $option['dashicon'] ) && $option['dashicon'] ? sprintf( '<span class="dashicons dashicons-%s"></span>&nbsp;', esc_attr( $option['dashicon'] ) ) : '',
-					isset( $option['th'] ) && $option['th'] ? $option['th'] : '&nbsp;'
-				);
+				$content .= PHP_EOL;
+				/**
+				 * TH
+				 */
+				$content .= '<th scope="row">';
+				/**
+				 * Allow to add code before a content of the TH HTML tag.
+				 *
+				 * @since 2.8.3
+				 *
+				 * @param string $content Content, default empty string.
+				 * @param array $option Current option array.
+				 */
+				$content .= apply_filters( 'iworks/options/filter/th/begin/' . $option_name, '', $option );
+				$content .= isset( $option['dashicon'] ) && $option['dashicon'] ? sprintf( '<span class="dashicons dashicons-%s"></span>&nbsp;', esc_attr( $option['dashicon'] ) ) : '';
+				$content .= isset( $option['th'] ) && $option['th'] ? $option['th'] : '&nbsp;';
+				/**
+				 * Allow to add code after a content of the TH HTML tag.
+				 *
+				 * @since 2.8.3
+				 *
+				 * @param string $content Content, default empty string.
+				 * @param array $option Current option array.
+				 */
+				$content .= apply_filters( 'iworks/options/filter/th/end/' . $option_name, '', $option );
+				$content .= '</th>';
+				/**
+				 * TD
+				 */
+				$content .= PHP_EOL;
 				$content .= '<td>';
+				/**
+				 * Allow to add code before a content of the TD HTML tag.
+				 *
+				 * @since 2.8.3
+				 *
+				 * @param string $content Content, default empty string.
+				 * @param array $option Current option array.
+				 */
+				$content .= apply_filters( 'iworks/options/td/begin/' . $option_name, '', $option );
 			}
 			$html_element_name = $option_name ? $this->option_prefix . $option_name : '';
 			$filter_name       = $html_element_name ? $option_group . '_' . $html_element_name : null;
@@ -445,15 +494,34 @@ class iworks_options {
 			$classes   = isset( $option['classes'] ) ? $option['classes'] : ( isset( $option['class'] ) ? explode( ' ', $option['class'] ) : array() );
 			$classes[] = sprintf( 'option-%s', $option['type'] );
 			/**
+			 * data string
+			 *
+			 * @since 3.0.0
+			 */
+			$data_string = '';
+			if ( isset( $option['data'] ) && is_array( $option['data'] ) ) {
+				foreach ( $option['data'] as $data_key => $data_value ) {
+					if ( $data_string ) {
+						$data_string .= ' ';
+					}
+					$data_string .= sprintf(
+						'data-%s="%s"',
+						esc_attr( $data_key ),
+						esc_attr( $data_value )
+					);
+				}
+			}
+			/**
 			 * build
 			 */
 			switch ( $option['type'] ) {
 				case 'hidden':
 					$hidden .= sprintf(
-						'<input type="hidden" name="%s" value="%s" id="%s" />',
+						'<input type="hidden" name="%s" value="%s" id="%s"%s>',
 						esc_attr( $html_element_name ),
 						esc_attr( $this->get_option( $option_name, $option_group ) ),
-						esc_attr( isset( $option['id'] ) ? $option['id'] : '' )
+						esc_attr( isset( $option['id'] ) ? $option['id'] : '' ),
+						$data_string
 					);
 					break;
 				case 'number':
@@ -468,12 +536,13 @@ class iworks_options {
 						$args['id'] = sprintf( ' id="%s"', $html_element_name );
 					}
 					$content .= sprintf(
-						'<input type="%s" name="%s" value="%s" class="%s" %s /> %s',
+						'<input type="%s" name="%s" value="%s" class="%s" %s%s> %s',
 						esc_attr( $option['type'] ),
 						esc_attr( $html_element_name ),
 						esc_attr( $this->get_option( $option_name, $option_group ) ),
 						esc_attr( implode( ' ', $classes ) ),
 						$this->build_field_attributes( $args ),
+						$data_string,
 						esc_html( isset( $option['label'] ) ? $option['label'] : '' )
 					);
 					break;
@@ -486,7 +555,7 @@ class iworks_options {
 						$id = sprintf( ' id="%s"', $html_element_name );
 					}
 					$content .= sprintf(
-						'<input type="%s" name="%s" value="%s" class="%s"%s%s%s%s /> %s',
+						'<input type="%s" name="%s" value="%s" class="%s"%s%s%s%s%s> %s',
 						esc_attr( $option['type'] ),
 						esc_attr( $html_element_name ),
 						esc_attr( $this->get_option( $option_name, $option_group ) ),
@@ -495,22 +564,24 @@ class iworks_options {
 						isset( $option['maxlength'] ) ? sprintf( ' maxlength="%d"', $option['maxlength'] ) : '',
 						isset( $option['placeholder'] ) ? sprintf( ' placeholder="%s"', esc_attr( $option['placeholder'] ) ) : '',
 						isset( $option['aria-label'] ) ? sprintf( ' aria-label="%s"', esc_attr( $option['aria-label'] ) ) : '',
+						$data_string,
 						isset( $option['label'] ) ? $option['label'] : ''
 					);
 					break;
 				case 'checkbox':
 					$related_to[ $option_name ] = $this->get_option( $option_name, $option_group );
 					$checkbox                   = sprintf(
-						'<label for="%s"><input type="checkbox" name="%s" id="%s" value="1"%s%s class="%s" /> %s</label>',
+						'<label for="%s"><input type="checkbox" name="%s" id="%s" value="1"%s%s class="%s"%s> %s</label>',
 						esc_attr( $html_element_name ),
 						esc_attr( $html_element_name ),
 						esc_attr( $html_element_name ),
 						checked( $related_to[ $option_name ], true, false ),
 						( ( isset( $option['disabled'] ) && $option['disabled'] ) or ( isset( $option['need_pro'] ) && $option['need_pro'] ) ) ? ' disabled="disabled"' : '',
 						esc_attr( implode( ' ', $classes ) ),
+						$data_string,
 						esc_html( isset( $option['label'] ) ? $option['label'] : '' )
 					);
-					$content                   .= apply_filters( $filter_name, $checkbox );
+					$content                   .= apply_filters( $filter_name, $checkbox, $option );
 					break;
 				case 'checkbox_group':
 					$option_value = $this->get_option( $option_name, $option_group );
@@ -564,7 +635,7 @@ class iworks_options {
 						/**
 					 * add extra options, maybe dynamic?
 					 */
-						$radio_options = apply_filters( $filter_name . '_data', $radio_options );
+						$radio_options = apply_filters( $filter_name . '_data', $radio_options, $option );
 						$radio         = apply_filters( $filter_name . '_content', null, $radio_options, $html_element_name, $option_name, $option_value );
 						if ( empty( $radio ) ) {
 							foreach ( $radio_options as $value => $input ) {
@@ -601,7 +672,7 @@ class iworks_options {
 								$radio = sprintf( '<ul>%s</ul>', $radio );
 							}
 						} else {
-							$radio = apply_filters( $filter_name, $radio );
+							$radio = apply_filters( $filter_name, $radio, $option );
 							if ( empty( $radio ) ) {
 								$content .= sprintf(
 									'<p>Error: no <strong>radio</strong> array key for option: <em>%s</em>.</p>',
@@ -609,7 +680,7 @@ class iworks_options {
 								);
 							}
 						}
-						$content .= apply_filters( $filter_name, $radio );
+						$content .= apply_filters( $filter_name, $radio, $option );
 					}
 					break;
 				case 'select':
@@ -663,17 +734,18 @@ class iworks_options {
 						}
 						if ( $select ) {
 							$select = sprintf(
-								'<select id="%s" name="%s%s" class="%s" %s>%s</select>',
+								'<select id="%s" name="%s%s" class="%s" %s%s>%s</select>',
 								esc_attr( $html_element_name ),
 								esc_attr( $html_element_name ),
 								esc_attr( $name_sufix ),
 								esc_attr( implode( ' ', $classes ) ),
 								$extra,
+								$data_string,
 								$select
 							);
 						}
 					}
-					$content .= apply_filters( $filter_name, $select );
+					$content .= apply_filters( $filter_name, $select, $option );
 					break;
 				case 'textarea':
 					$value    = $this->get_option( $option_name, $option_group );
@@ -728,14 +800,14 @@ class iworks_options {
 					$content .= apply_filters(
 						$filter_name,
 						sprintf(
-							'<input type="text" name="%s" value="%s" class="wpColorPicker %s"%s%s /> %s',
+							'<input %s type="text" name="%s" value="%s" class="wpColorPicker %s" %s%s> %s',
+							esc_attr( $id ),
 							esc_attr( $html_element_name ),
 							esc_attr( $this->get_option( $option_name, $option_group ) ),
 							esc_attr( isset( $option['class'] ) && $option['class'] ? $option['class'] : '' ),
-							esc_attr( $id ),
 							( isset( $option['need_pro'] ) and $option['need_pro'] ) ? ' disabled="disabled"' : '',
-							isset( $option['label'] ) ? $option['label'] : '',
-							esc_html( $html_element_name )
+							$data_string,
+							isset( $option['label'] ) ? $option['label'] : ''
 						)
 					);
 					break;
@@ -752,7 +824,8 @@ class iworks_options {
 						$src = wp_get_attachment_url( $value );
 					}
 					$content .= sprintf(
-						'<img id="%s_img" src="%s" alt="" style="%s%sclear:right;display:block;margin-bottom:10px;" />',
+						'<%s id="%s_img" src="%s" alt="" style="%s%s;margin-bottom:10px;"><br>',
+						esc_attr( 'img' ),
 						esc_attr( $html_element_name ),
 						esc_attr( $src ? $src : '' ),
 						array_key_exists( 'max-width', $option ) && is_integer( $option['max-width'] ) ? sprintf( 'max-width: %dpx;', $option['max-width'] ) : '',
@@ -784,11 +857,12 @@ class iworks_options {
 				case 'button':
 					$classes[] = 'button';
 					$content  .= sprintf(
-						'<input type="button" name="%s" value="%s" class="%s" data-nonce="%s" />',
+						'<input type="button" name="%s" value="%s" class="%s" data-nonce="%s"%s>',
 						esc_attr( $html_element_name ),
 						esc_attr( $option['value'] ),
 						esc_attr( implode( ' ', $classes ) ),
-						wp_create_nonce( $html_element_name )
+						wp_create_nonce( $html_element_name ),
+						$data_string
 					);
 					break;
 				default:
@@ -801,8 +875,27 @@ class iworks_options {
 					}
 					$content .= sprintf( '<p class="description">%s</p>', esc_html( $option['description'] ) );
 				}
+				/**
+				 * Allow to add code after a content of the TD HTML tag.
+				 *
+				 * @since 2.8.3
+				 *
+				 * @param string $content Content, default empty string.
+				 * @param array $option Current option array.
+				 */
+				$content .= apply_filters( 'iworks/options/td/end/' . $option_name, '', $option );
 				$content .= '</td>';
 				$content .= '</tr>';
+				$content .= PHP_EOL;
+				/**
+				 * Allow to add code before the TR HTML tag.
+				 *
+				 * @since 2.8.3
+				 *
+				 * @param string $content Content, default empty string.
+				 * @param array $option Current option array.
+				 */
+				$content .= apply_filters( 'iworks/options/filter/tr/after/' . $option_name, '', $option );
 			}
 		}
 		/**
@@ -837,7 +930,7 @@ class iworks_options {
 						foreach ( $options['thead'] as $text => $colspan ) {
 							$top .= sprintf(
 								'<th%s>%s</th>',
-								$colspan > 1 ? ' colspan="' . $colspan . '"' : '',
+								$colspan > 1 ? ' colspan="' . intval( $colspan ) . '"' : '',
 								esc_html( $text )
 							);
 						}
@@ -865,12 +958,22 @@ class iworks_options {
 			);
 		}
 		/**
+		 * add tags to wp_kses()
+		 */
+		$tags = $this->get_allowed_tags();
+		/**
 		 * iworks-options wrapper
 		 */
-		$content = sprintf( '<div class="iworks-options">%s</div>', $content );
+		$content = sprintf(
+			'<div class="iworks-options">%s</div>',
+			wp_kses( $content, $tags )
+		);
 		/* print ? */
 		if ( $echo ) {
-			echo $content;
+			/**
+			 * this is alredy escaped
+			 */
+			echo wp_kses( $content, $tags );
 			return;
 		}
 		return $content;
@@ -896,13 +999,48 @@ class iworks_options {
 			/**
 			 * register setting
 			 */
-			$args = array();
+			$args = array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+			);
+			/**
+			 * set type
+			 */
+			if ( isset( $option['type'] ) ) {
+				switch ( $option['type'] ) {
+					case 'string':
+					case 'boolean':
+					case 'integer':
+					case 'number':
+					case 'array':
+					case 'object':
+						$args['type'] = $option['type'];
+						break;
+					case 'text':
+					case 'textarea':
+					case 'wpColorPicker':
+						$args['type'] = 'string';
+						break;
+					case 'checkbox':
+						$args['type'] = 'integer';
+						break;
+				}
+			}
+			/**
+			 * set own callback
+			 */
 			if ( isset( $option['sanitize_callback'] ) ) {
 				$args['sanitize_callback'] = $option['sanitize_callback'];
 			}
+			/**
+			 * set description
+			 */
 			if ( isset( $option['description'] ) ) {
 				$args['description'] = $option['description'];
 			}
+			/**
+			 * need to flush_rewrite_rules?
+			 */
 			if ( isset( $option['flush_rewrite_rules'] ) ) {
 				$action = sprintf( 'update_option_%s%s', $this->option_prefix, $option['name'] );
 				add_action( $action, array( $this, 'flush_rewrite_rules' ) );
@@ -926,7 +1064,11 @@ class iworks_options {
 		if ( isset( $options['use_tabs'] ) && $options['use_tabs'] ) {
 			register_setting(
 				$this->option_prefix . 'index',
-				$this->option_prefix . 'last_used_tab'
+				$this->option_prefix . 'last_used_tab',
+				array(
+					'type'              => 'string',
+					'sanitize_callback' => 'sanitize_text_field',
+				)
 			);
 		}
 		/**
@@ -1089,7 +1231,15 @@ class iworks_options {
 		if ( ( $default_value || $forece_default ) && is_null( $option_value ) ) {
 			$option_value = $default_value;
 		}
-		return $option_value;
+		return apply_filters(
+			sprintf(
+				'iworks/option/get/%s/%s/%s',
+				$this->plugin,
+				$option_group,
+				$option_name
+			),
+			$option_value
+		);
 	}
 
 	public function get_all_options() {
@@ -1183,7 +1333,7 @@ class iworks_options {
 			 */
 			$value = false;
 			if ( array_key_exists( $this->get_option_name( $option_name ), $_POST ) ) {
-				$value = sanitize_text_field( $_POST[ $this->get_option_name( $option_name ) ] );
+				$value = sanitize_text_field( wp_unslash( $_POST[ $this->get_option_name( $option_name ) ] ) );
 			}
 			/**
 			 * add custom sanitization
@@ -1207,10 +1357,10 @@ class iworks_options {
 	public function select_page_helper( $name, $show_option_none = false, $post_type = 'page' ) {
 		$args = array(
 			'echo'             => false,
-			'name'             => $this->get_option_name( $name ),
-			'selected'         => $this->get_option( $name ),
-			'show_option_none' => $show_option_none,
-			'post_type'        => $post_type,
+			'name'             => esc_attr( $this->get_option_name( $name ) ),
+			'selected'         => esc_attr( $this->get_option( $name ) ),
+			'show_option_none' => esc_attr( $show_option_none ),
+			'post_type'        => esc_attr( $post_type ),
 		);
 		return wp_dropdown_pages( $args );
 	}
@@ -1287,12 +1437,6 @@ class iworks_options {
 	</form>
 </div>
 		<?php
-		/**
-		 * check metaboxes for key
-		 */
-		if ( array_key_exists( 'metaboxes', $this->options[ $option_name ] ) ) {
-			include_once ABSPATH . '/wp-admin/includes/meta-boxes.php';
-		}
 	}
 
 	public function load_page() {
@@ -1472,6 +1616,9 @@ class iworks_options {
 		return $content;
 	}
 
+	/**
+	 * Common input class
+	 */
 	private function input( $name, $value = '', $args = array(), $type = 'text' ) {
 		/**
 		 * default value
@@ -1576,14 +1723,15 @@ class iworks_options {
 		return $this->select( $name, $value, $args );
 	}
 
-	private function textarea( $name, $value = '', $args = array() ) {
+	private function textarea( $name, $value = '', $args = array(), $data_string = '' ) {
 		if ( ! isset( $args['rows'] ) ) {
 			$args['rows'] = 3;
 		}
 		return sprintf(
-			'<textarea name="%s" %s>%s</textarea>',
+			'<textarea name="%s" %s%s>%s</textarea>',
 			esc_attr( $name ),
 			$this->build_field_attributes( $args ),
+			$data_string,
 			$value
 		);
 	}
@@ -1824,12 +1972,12 @@ class iworks_options {
 			array(
 				'handle'  => 'select2',
 				'file'    => 'select2.min.css',
-				'version' => '4.0.3',
+				'version' => '4.0.13',
 			),
 			array(
 				'handle'  => 'select2',
 				'file'    => 'select2.min.js',
-				'version' => '4.0.3',
+				'version' => '4.0.13',
 				'deps'    => array( 'jquery' ),
 			),
 			/**
@@ -1915,7 +2063,7 @@ class iworks_options {
 		$nonce_names = array( $this->get_nonce_name(), '_wpnonce' );
 		foreach ( $nonce_names as $nonce_name ) {
 			if ( isset( $_REQUEST[ $nonce_name ] ) ) {
-				return $_REQUEST[ $nonce_value ];
+				return sanitize_text_field( wp_unslash( $_REQUEST[ $nonce_value ] ) );
 			}
 		}
 		return new WP_Error( 'security', esc_html__( 'Failed Security Check', 'iworks-pwa' ) );
@@ -1928,5 +2076,112 @@ class iworks_options {
 	 */
 	private function get_nonce_name() {
 		return apply_filters( 'iworks_options_nonce_name', 'iworks_options' );
+	}
+
+	/**
+	 * get allowed tags
+	 *
+	 * @since 2.9.5
+	 */
+	private function get_allowed_tags() {
+		$tags = array(
+			'input'    => array(
+				'accept'              => true,
+				'alt'                 => true,
+				'aria-*'              => true,
+				'autocomplete'        => true,
+				'autofocus'           => true,
+				'checked'             => true,
+				'class'               => true,
+				'data-*'              => true,
+				'dirname'             => true,
+				'disabled'            => true,
+				'form'                => true,
+				'formaction'          => true,
+				'formenctype'         => true,
+				'formmethod'          => true,
+				'formnovalidate'      => true,
+				'formtarget'          => true,
+				'height'              => true,
+				'id'                  => true,
+				'list'                => true,
+				'max'                 => true,
+				'maxlength'           => true,
+				'min'                 => true,
+				'minlength'           => true,
+				'multiple'            => true,
+				'name'                => true,
+				'pattern'             => true,
+				'placeholder'         => true,
+				'popovertarget'       => true,
+				'popovertargetaction' => true,
+				'readonly'            => true,
+				'required'            => true,
+				'size'                => true,
+				'src'                 => true,
+				'step'                => true,
+				'type'                => true,
+				'value'               => true,
+				'width'               => true,
+			),
+			'optgroup' => array(
+				'label'  => true,
+				'class'  => true,
+				'data-*' => true,
+				'aria-*' => true,
+				'id'     => true,
+			),
+			'select'   => array(
+				'autocomplete' => true,
+				'autofocus'    => true,
+				'disabled '    => true,
+				'form'         => true,
+				'multiple'     => true,
+				'name'         => true,
+				'class'        => true,
+				'data-*'       => true,
+				'aria-*'       => true,
+				'id'           => true,
+				'required'     => true,
+				'size'         => true,
+			),
+			'option'   => array(
+				'label'     => true,
+				'disabled ' => true,
+				'value'     => true,
+				'selected'  => true,
+				'class'     => true,
+				'data-*'    => true,
+				'aria-*'    => true,
+				'id'        => true,
+			),
+			'textarea' => array(
+				'autocomplete' => true,
+				'autofocus'    => true,
+				'cols'         => true,
+				'dirname'      => true,
+				'disabled'     => true,
+				'form'         => true,
+				'maxlength'    => true,
+				'minlength'    => true,
+				'name'         => true,
+				'placeholder'  => true,
+				'readonly'     => true,
+				'required'     => true,
+				'rows'         => true,
+				'wrap'         => true,
+				'class'        => true,
+				'data-*'       => true,
+				'aria-*'       => true,
+				'id'           => true,
+			),
+		);
+		return apply_filters(
+			'iworks/options/wp_kses_allowed_html',
+			wp_parse_args(
+				$tags,
+				wp_kses_allowed_html( 'post' )
+			)
+		);
 	}
 }
