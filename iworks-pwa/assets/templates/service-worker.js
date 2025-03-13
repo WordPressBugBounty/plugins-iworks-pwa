@@ -1,5 +1,5 @@
 /**
- * PWA — easy way to Progressive Web App - 1.6.9
+ * PWA — easy way to Progressive Web App - 1.7.0
  */
 self.addEventListener('install', (event) => {
     event.waitUntil((async () => {
