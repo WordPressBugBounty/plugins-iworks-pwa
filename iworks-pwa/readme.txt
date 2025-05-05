@@ -3,8 +3,8 @@ Contributors: iworks
 Donate link: https://ko-fi.com/iworks?utm_source=iworks-pwa&utm_medium=readme-donate
 Tags: PWA, Progressive Web Application, manifest.json, offline
 Requires at least: 6.0
-Tested up to: 6.7
-Stable tag: 1.7.0
+Tested up to: 6.8
+Stable tag: 1.7.1
 Requires PHP: 8.0
 License: GPLv3 or later
 
@@ -33,8 +33,8 @@ Great! There are several ways you can get involved to help make PWA — easy way
 3. **Issue Pull Requests:** If you're a developer, the easiest way to get involved is to help out on [issues already reported](https://github.com/iworks/iworks-pwa/issues) in GitHub. Be sure to check out the [contributing guide](https://github.com/iworks/iworks-pwa/blob/master/contributing.md) for developers.
 
 Thank you for wanting to make PWA — easy way to Progressive Web App better for everyone!
-i
-The "PWA — easy way to Progressive Web App" plugin is available also on [GitHub - Orphans](https://github.com/iworks/iworks-pwa).
+
+The "PWA — easy way to Progressive Web App" plugin is available also on [GitHub](https://github.com/iworks/iworks-pwa).
 
 == Installation ==
 
@@ -106,6 +106,12 @@ A2HS is supported in all mobile browsers, except iOS web view. It's also support
 == Changelog ==
 
 Project maintained on GitHub at [iworks/iworks-pwa](https://github.com/iworks/iworks-pwa).
+
+= 1.7.1 (2025-05-05) =
+* Added a nonce check to the menu-saving action for improved security.
+* Added escaping functions in multiple areas to enhance security.
+* Replaced the `unlink()` function with `wp_delete_file()` for better compatibility and safety.
+* Updated the [iWorks Options](https://github.com/iworks/wordpress-options-class) module to version 3.0.0.
 
 = 1.7.0 (2025-03-13) =
 * Updated the [iWorks Options](https://github.com/iworks/wordpress-options-class) module to version 2.9.8.
@@ -304,7 +310,7 @@ Project maintained on GitHub at [iworks/iworks-pwa](https://github.com/iworks/iw
 * Added configuration for application icons.
 * Added configuration for application orientation.
 * Added configuration for application short name.
-* Changed plugin name from "iWorks PWA" to "PWA — simple way to Progressive Web App".
+* Changed plugin name from "iWorks PWA" to "PWA — easy way to Progressive Web App".
 * Updated the [iWorks Options](https://github.com/iworks/wordpress-options-class) module to version 2.8.0.
 * Updated the [iWorks Rate](https://github.com/iworks/iworks-rate) module to version 2.0.6.
 
