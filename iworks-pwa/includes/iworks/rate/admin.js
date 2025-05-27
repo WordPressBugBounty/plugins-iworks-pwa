@@ -5,7 +5,7 @@ jQuery(document).ready(
             var data = {
                 action: 'iworks_rate_button',
                 plugin_id: $parent.data('id'),
-                button: $(this).data('action'),
+                button: $(this).data('action')? $(this).data('action') : ( $parent.data('action')? $parent.data('action') : 'hide' ),   
                 _wpnonce: $parent.data('nonce')
             };
             if ('get-help' === $(this).data('action')) {

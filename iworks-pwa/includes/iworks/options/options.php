@@ -3,16 +3,16 @@
 Class Name: iWorks Options
 Class URI: http://iworks.pl/
 Description: Option class to manage options.
-Version: 3.0.1
+Version: 3.0.6
 Author: Marcin Pietrzak
 Author URI: http://iworks.pl/
-License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License: GPLv3 or later
+License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
 Copyright 2011-2025 Marcin Pietrzak (marcin@iworks.pl)
 
 this program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License, version 2, as
+it under the terms of the GNU General Public License, version 3, as
 published by the Free Software Foundation.
 
 This program is distributed in the hope that it will be useful,
@@ -56,13 +56,6 @@ class iworks_options {
 	public $notices;
 
 	/**
-	 * self file
-	 *
-	 * @since 2.7.3
-	 */
-	private $__file__ = __FILE__;
-
-	/**
 	 * call from plugin
 	 *
 	 * @since 2.7.3
@@ -81,7 +74,7 @@ class iworks_options {
 		 * basic setup
 		 */
 		$this->notices              = array();
-		$this->version              = '3.0.1';
+		$this->version              = '3.0.6';
 		$this->option_group         = 'index';
 		$this->option_function_name = null;
 		$this->option_prefix        = null;
@@ -155,67 +148,97 @@ class iworks_options {
 			$pages = $data['pages'] + $pages;
 		}
 		foreach ( $pages as $key => $data ) {
-			$keys_to_sanitize = array( 'menu', 'parent' );
-			foreach ( $keys_to_sanitize as $key_to_sanitize ) {
-				if ( ! array_key_exists( $key_to_sanitize, $data ) ) {
-					$data[ $key_to_sanitize ] = '';
-				}
+			/**
+			 * Parse and sanitize admin menu arguments.
+			 *
+			 * @since 1.0.0
+			 *
+			 * @param array $data {
+			 *     Array of menu page arguments.
+			 *
+			 *     @type string $menu         The menu type. Default 'top_level'.
+			 *     @type string $capability   The capability required for this menu. Default 'manage_options'.
+			 *     @type int    $position     The position in the menu order. Default 10.
+			 *     @type string $icon_url     The URL to the icon to be used for this menu. Default null.
+			 *     @type string $parent       The parent menu slug. Default null for top-level menu.
+			 *     @type string $page_title   The text to be displayed in the title tags of the page.
+			 *                               Default 'No Page Title'.
+			 * }
+			 */
+			$data = wp_parse_args(
+				$data,
+				array(
+					'menu'       => 'top_level',
+					'capability' => 'manage_options',
+					'position'   => 10,
+					'icon_url'   => null,
+					'parent'     => null,
+					'page_title' => esc_html__( 'No Page Title', 'iworks-pwa' ),
+				)
+			);
+			/**
+			 * Check callback
+			 */
+			$callback = array( $this, 'show_page' );
+			if ( isset( $data['show_page_callback'] ) && is_callable( $data['show_page_callback'] ) ) {
+				$callback = $data['show_page_callback'];
 			}
-			if ( 'submenu' == $data['menu'] ) {
-				if ( ! empty( $data['parent'] ) ) {
-					/**
-					 * Check callback
-					 */
-					$callback = array( $this, 'show_page' );
-					if ( isset( $data['show_page_callback'] ) && is_callable( $data['show_page_callback'] ) ) {
-						$callback = $data['show_page_callback'];
-					}
-					if ( isset( $data['set_callback_to_null'] ) && $data['set_callback_to_null'] ) {
-						$callback = null;
-					}
-					/**
-					 * add submenu
-					 */
-					$this->pagehooks[ $key ] = add_submenu_page(
-						$data['parent'],
-						$data['page_title'],
-						isset( $data['menu_title'] ) ? $data['menu_title'] : $data['page_title'],
-						apply_filters( 'iworks_options_capability', 'manage_options', 'settings' ),
-						isset( $data['menu_slug'] ) ? $data['menu_slug'] : $this->get_option_name( $key ),
-						$callback
-					);
-					add_action( 'load-' . $this->pagehooks[ $key ], array( $this, 'load_page' ) );
-				}
-			} else {
-				switch ( $data['menu'] ) {
-					case 'comments':
-					case 'dashboard':
-					case 'links':
-					case 'management':
-					case 'media':
-					case 'options':
-					case 'pages':
-					case 'plugins':
-					case 'posts':
-					case 'posts':
-					case 'theme':
-					case 'users':
-						$function = sprintf( 'add_%s_page', $data['menu'] );
-						break;
-					default:
-						$function = 'add_menu_page';
-						break;
-				}
-				if ( isset( $data['page_title'] ) ) {
+			if ( isset( $data['set_callback_to_null'] ) && $data['set_callback_to_null'] ) {
+				$callback = null;
+			}
+			/**
+			 * Add menu or submenu
+			 */
+			switch ( $data['menu'] ) {
+				case 'comments':
+				case 'dashboard':
+				case 'links':
+				case 'management':
+				case 'media':
+				case 'options':
+				case 'pages':
+				case 'plugins':
+				case 'posts':
+				case 'posts':
+				case 'theme':
+				case 'users':
+					$function                = sprintf( 'add_%s_page', $data['menu'] );
 					$this->pagehooks[ $key ] = $function(
 						$data['page_title'],
 						isset( $data['menu_title'] ) ? $data['menu_title'] : $data['page_title'],
-						'manage_options',
+						apply_filters( 'iworks_options_capability', 'manage_options', 'settings' ),
 						$this->get_option_name( $key ),
-						array( $this, 'show_page' )
+						apply_filters( 'iworks_options_callback', $callback, $data, $this->options ),
+						isset( $data['position'] ) ? floatval( $data['position'] ) : null
 					);
 					add_action( 'load-' . $this->pagehooks[ $key ], array( $this, 'load_page' ) );
-				}
+					break;
+				case 'top_level':
+					$this->pagehooks[ $key ] = add_menu_page(
+						$data['page_title'],
+						isset( $data['menu_title'] ) ? $data['menu_title'] : $data['page_title'],
+						apply_filters( 'iworks_options_capability', 'manage_options', 'settings' ),
+						$this->get_option_name( $key ),
+						apply_filters( 'iworks_options_callback', $callback, $data, $this->options ),
+						apply_filters( 'iworks_options_icon_url', $data['icon_url'], $data ),
+						isset( $data['position'] ) ? floatval( $data['position'] ) : null
+					);
+					add_action( 'load-' . $this->pagehooks[ $key ], array( $this, 'load_page' ) );
+					break;
+				default:
+					if ( ! empty( $data['parent'] ) ) {
+						$this->pagehooks[ $key ] = add_submenu_page(
+							$data['parent'],
+							$data['page_title'],
+							isset( $data['menu_title'] ) ? $data['menu_title'] : $data['page_title'],
+							apply_filters( 'iworks_options_capability', 'manage_options', 'settings' ),
+							isset( $data['menu_slug'] ) ? $data['menu_slug'] : $this->get_option_name( $key ),
+							apply_filters( 'iworks_options_callback', $callback, $data, $this->options ),
+							isset( $data['position'] ) ? floatval( $data['position'] ) : null
+						);
+						add_action( 'load-' . $this->pagehooks[ $key ], array( $this, 'load_page' ) );
+					}
+					break;
 			}
 		}
 	}
@@ -360,8 +383,8 @@ class iworks_options {
 				}
 			}
 			/**
-				* add default type
-				*/
+			 * add default type
+			 */
 			if ( ! array_key_exists( 'type', $option ) ) {
 				$option['type'] = 'text';
 			}
@@ -760,7 +783,7 @@ class iworks_options {
 					}
 					$option['options'] = apply_filters( $filter_name . '_data', $option['options'], $option_name, $option_value );
 					$select            = apply_filters( $filter_name . '_content', null, $option['options'], $html_element_name, $option_name, $option_value );
-					$select            = apply_filters( 'iworks_options_' . $option_name . '_content', null, $option['options'], $html_element_name, $option_name, $option_value );
+					$select            = apply_filters( 'iworks_options_' . $option_name . '_content', $select, $option['options'], $html_element_name, $option_name, $option_value );
 					if ( empty( $select ) ) {
 						foreach ( $option['options'] as $key => $value ) {
 							$disabled = '';
@@ -2533,6 +2556,47 @@ class iworks_options {
 				'popovertarget'       => true,
 				'popovertargetaction' => true,
 				'readonly'            => true,
+				'rel'                 => true,
+				'required'            => true,
+				'size'                => true,
+				'src'                 => true,
+				'step'                => true,
+				'type'                => true,
+				'value'               => true,
+				'width'               => true,
+			),
+			'button'   => array(
+				'accept'              => true,
+				'alt'                 => true,
+				'aria-*'              => true,
+				'autocomplete'        => true,
+				'autofocus'           => true,
+				'checked'             => true,
+				'class'               => true,
+				'data-*'              => true,
+				'dirname'             => true,
+				'disabled'            => true,
+				'form'                => true,
+				'formaction'          => true,
+				'formenctype'         => true,
+				'formmethod'          => true,
+				'formnovalidate'      => true,
+				'formtarget'          => true,
+				'height'              => true,
+				'id'                  => true,
+				'list'                => true,
+				'max'                 => true,
+				'maxlength'           => true,
+				'min'                 => true,
+				'minlength'           => true,
+				'multiple'            => true,
+				'name'                => true,
+				'pattern'             => true,
+				'placeholder'         => true,
+				'popovertarget'       => true,
+				'popovertargetaction' => true,
+				'readonly'            => true,
+				'rel'                 => true,
 				'required'            => true,
 				'size'                => true,
 				'src'                 => true,
@@ -2629,4 +2693,19 @@ class iworks_options {
 			)
 		);
 	}
+
+	/**
+	 * Get the array of registered page hooks
+	 *
+	 * Retrieves all registered admin page hooks that have been added through this class.
+	 *
+	 * @since 3.0.3
+	 *
+	 * @return array Associative array of page hooks where keys are page slugs
+	 *              and values are the corresponding WordPress hook suffixes.
+	 */
+	public function get_pagehooks() {
+		return $this->pagehooks;
+	}
 }
+

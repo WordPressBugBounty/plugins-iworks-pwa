@@ -4,7 +4,7 @@ Donate link: https://ko-fi.com/iworks?utm_source=iworks-pwa&utm_medium=readme-do
 Tags: PWA, Progressive Web Application, manifest.json, offline
 Requires at least: 6.0
 Tested up to: 6.8
-Stable tag: 1.7.3
+Stable tag: 1.7.4
 Requires PHP: 8.0
 License: GPLv3 or later
 
@@ -102,10 +102,24 @@ A2HS is supported in all mobile browsers, except iOS web view. It's also support
 1. Microsoft configuration.
 1. Installation app on Android.
 1. Shortcuts menu on Android.
+1. Experimental features.
 
 == Changelog ==
 
 Project maintained on GitHub at [iworks/iworks-pwa](https://github.com/iworks/iworks-pwa).
+
+= 1.7.5 (2025-05-27) =
+* **New**: Added experimental features section with description field, and screenshot uploads.
+* **Security**: Improved input validation and sanitization throughout the plugin.
+* **i18n**: Fixed textdomain for consistent translation handling.
+* **Dependencies**: Updated the [iWorks Options](https://github.com/iworks/wordpress-options-class) module to version 3.0.6 and the [iWorks Rate](https://github.com/iworks/iworks-rate) module to version 2.3.0.
+
+= 1.7.4 (2025-05-18) =
+* **Performance**: Made `get_cache_name()` method protected in iWorks_PWA class for better extensibility.
+* **Cache**: Updated cache key generation to use plugin version for better cache management.
+* **Documentation**: Added comprehensive PHPDoc for the new set_transient method.
+* **Code Quality**: Improved code organization and inline documentation.
+
 
 = 1.7.3 (2025-05-15) =
 * Updated the [iWorks Options](https://github.com/iworks/wordpress-options-class) module to version 3.0.1.

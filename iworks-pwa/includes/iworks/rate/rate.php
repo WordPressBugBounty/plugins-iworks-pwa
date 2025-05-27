@@ -3,7 +3,7 @@ defined( 'ABSPATH' ) || exit; // Exit if accessed directly
 /**
  * iWorks_Rate - Dashboard Notification module.
  *
- * @version 2.2.3
+ * @version 2.3.0
  * @author  iworks (Marcin Pietrzak)
  *
  */
@@ -16,7 +16,7 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 		 * @since 1.0.1
 		 * @var   string
 		 */
-		private $version = '2.2.3';
+		private $version = '2.3.0';
 
 		/**
 		 * $wpdb->options field name.
@@ -58,7 +58,7 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 		 *
 		 * @since  1.0.0
 		 */
-		static public function instance() {
+		public static function instance() {
 			static $Inst = null;
 			if ( null === $Inst ) {
 				$Inst = new iworks_rate();
@@ -149,14 +149,32 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 			return $actions;
 		}
 
+		/**
+		 * Load required hooks and scripts for the admin notice.
+		 *
+		 * @since 2.0.2
+		 */
 		public function load() {
+			/**
+			 * regular message
+			 */
 			$plugin_id = $this->choose_plugin();
-			if ( empty( $plugin_id ) ) {
+			if ( ! empty( $plugin_id ) ) {
+				$this->plugin_id = $plugin_id;
+				add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
+				add_action( 'admin_notices', array( $this, 'show' ) );
 				return;
 			}
-			$this->plugin_id = $plugin_id;
-			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
-			add_action( 'admin_notices', array( $this, 'show' ) );
+			/**
+			 * anniversary message
+			 */
+			$plugin_id = $this->choose_anniversary_plugin();
+			if ( ! empty( $plugin_id ) ) {
+				$this->plugin_id = $plugin_id;
+				add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
+				add_action( 'admin_notices', array( $this, 'show_anniversary' ) );
+				return;
+			}
 		}
 
 		/**
@@ -227,6 +245,26 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 				$update                             = true;
 			}
 			/**
+			 * check last anniversary days
+			 *
+			 * @since 2.3.0
+			 */
+			if ( ! isset( $this->stored[ $plugin_id ]['last_anniversary_days'] ) ) {
+				$this->stored[ $plugin_id ]['last_anniversary_days'] = floor(
+					( time() - $this->stored[ $plugin_id ]['registered'] ) / ( 60 * 60 * 24 )
+				);
+				$update = true;
+			}
+			/**
+			 * check last anniversary
+			 *
+			 * @since 2.3.0
+			 */
+			if ( ! isset( $this->stored[ $plugin_id ]['last_anniversary'] ) ) {
+				$this->stored[ $plugin_id ]['last_anniversary'] = 0;
+				$update = true;
+			}
+			/**
 			 * check title - can be diferent due language
 			 *
 			 * @since 2.0.6
@@ -287,26 +325,56 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 				case '':
 				case 'add-review':
 					$this->add_weeks( $plugin_id );
-					wp_send_json_success();
+					break;
 				case 'hide':
 					$this->add_weeks( $plugin_id );
 					$this->hide( $plugin_id );
-					wp_send_json_success();
+					break;
 				case 'donate':
 					$this->add_months( $plugin_id );
-					wp_send_json_success();
+					break;
+				case 'hide-anniversary':
+					$this->hide_anniversary( $plugin_id );
+					break;
 			}
 			wp_send_json_success();
 		}
 
+		/**
+		 * Hide the rate notice for a specific plugin.
+		 *
+		 * @since 2.0.0
+		 * @param string $plugin_id The ID of the plugin to hide the notice for.
+		 */
 		public function hide( $plugin_id ) {
 			if ( ! isset( $this->stored[ $plugin_id ] ) ) {
 				return;
 			}
-			$this->stored[ $plugin_id ]['rated'] = time();
+			$this->stored[ $plugin_id ]['hide'] = time();
 			$this->store_data();
 		}
 
+		/**
+		 * Hide the anniversary notice for a specific plugin.
+		 *
+		 * @since 2.3.0
+		 * @param string $plugin_id The ID of the plugin to hide the notice for.
+		 */
+		public function hide_anniversary( $plugin_id ) {
+			if ( ! isset( $this->stored[ $plugin_id ] ) ) {
+				return;
+			}
+			++$this->stored[ $plugin_id ]['last_anniversary'];
+			$this->store_data();
+		}
+
+		/**
+		 * Extend the show_at timestamp by a random number of weeks.
+		 *
+		 * @since 2.0.0
+		 * @param string $plugin_id The ID of the plugin to extend the delay for.
+		 * @access private
+		 */
 		private function add_weeks( $plugin_id ) {
 			if ( ! isset( $this->stored[ $plugin_id ] ) ) {
 				return;
@@ -315,6 +383,13 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 			$this->store_data();
 		}
 
+		/**
+		 * Extend the show_at timestamp by a random number of months.
+		 *
+		 * @since 2.0.0
+		 * @param string $plugin_id The ID of the plugin to extend the delay for.
+		 * @access private
+		 */
 		private function add_months( $plugin_id ) {
 			if ( ! isset( $this->stored[ $plugin_id ] ) ) {
 				return;
@@ -369,6 +444,16 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 		}
 
 		/**
+		 * Action handler for 'admin_notices'
+		 * Display the Dashboard notification.
+		 *
+		 * @since  2.2.0
+		 */
+		public function show_anniversary() {
+			$filename = $this->stored[ $this->plugin_id ]['last_anniversary'] ? 'anniversary' : 'first-year';
+			$this->render_message( $this->plugin_id, $filename, 'happy-anniversary' );
+		}
+		/**
 		 * Check to see if there is a pending message to display and returns
 		 * the message details if there is.
 		 *
@@ -390,7 +475,7 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 			/**
 			 * change time by filter
 			 */
-			$now = apply_filters( 'iworks_rate_set_custom_time', time() );
+			$now = intval( apply_filters( 'iworks_rate_set_custom_time', time() ) );
 			foreach ( $this->stored as $plugin_id => $item ) {
 				if ( ! isset( $this->plugins[ $plugin_id ] ) ) {
 					if ( isset( $this->stored[ $plugin_id ] ) ) {
@@ -400,6 +485,54 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 					continue;
 				}
 				if ( intval( $item['show_at'] ) > $now ) {
+					continue;
+				}
+				if ( YEAR_IN_SECONDS > time() - intval( $item['hide'] ) ) {
+					continue;
+				}
+				$choosen[] = $plugin_id;
+			}
+			if ( empty( $choosen ) ) {
+				return false;
+			}
+			return $choosen[ array_rand( $choosen ) ];
+		}
+
+		/**
+		 * Choose a plugin that is eligible for an anniversary rating prompt.
+		 *
+		 * @since 2.2.0
+		 * @access protected
+		 * @return string|false Returns the plugin ID if a matching plugin is found, false otherwise.
+		 */
+		protected function choose_anniversary_plugin() {
+			if ( wp_is_mobile() ) {
+				return false;
+			}
+			/**
+			 * list
+			 */
+			$choosen = array();
+			/**
+			 * change time by filter
+			 */
+			$now = intval( apply_filters( 'iworks_rate_set_custom_time', time() ) );
+			foreach ( $this->stored as $plugin_id => $item ) {
+				if ( ! isset( $this->plugins[ $plugin_id ] ) ) {
+					if ( isset( $this->stored[ $plugin_id ] ) ) {
+						unset( $this->stored[ $plugin_id ] );
+						$this->store_data();
+					}
+					continue;
+				}
+				if ( ! isset( $item['last_anniversary_days'] ) ) {
+					continue;
+				}
+				if ( ! isset( $item['last_anniversary'] ) ) {
+					continue;
+				}
+				$anniversary = intval( $item['last_anniversary_days'] / 365 );
+				if ( $anniversary < $item['last_anniversary'] ) {
 					continue;
 				}
 				$choosen[] = $plugin_id;
@@ -415,19 +548,25 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 		 *
 		 * @since  1.0.0
 		 */
-		protected function render_message( $plugin_id ) {
-			$file   = $this->get_file( 'thanks' );
+		protected function render_message( $plugin_id, $filename = 'thanks', $group = '' ) {
+			$file   = $this->get_file( $filename, $group );
 			$plugin = $this->get_plugin_data_by_plugin_id( $plugin_id );
 			load_template( $file, true, $plugin );
 		}
 
 		/**
+		 * Get the absolute path to a template file.
+		 *
 		 * @since 2.0.1
+		 * @param string $file The base name of the template file.
+		 * @param string $group Optional. Subdirectory within the templates directory.
+		 * @return string The full path to the template file.
+		 * @access private
 		 */
 		private function get_file( $file, $group = '' ) {
 			return sprintf(
 				'%s/templates/%s%s%s.php',
-				dirname( __FILE__ ),
+				__DIR__,
 				$group,
 				'' === $group ? '' : '/',
 				sanitize_title( $file )
@@ -435,7 +574,12 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 		}
 
 		/**
+		 * Get plugin data by its ID.
+		 *
 		 * @since 2.0.1
+		 * @param string $plugin_id The ID of the plugin to get data for.
+		 * @return array|WP_Error Plugin data array or WP_Error on failure.
+		 * @access private
 		 */
 		private function get_plugin_data_by_plugin_id( $plugin_id ) {
 			if ( ! isset( $this->plugins[ $plugin_id ] ) ) {
@@ -478,6 +622,24 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 				)
 			);
 			/**
+			 * Add utm parameters to donate link.
+			 *
+			 *  @since 2.2.0
+			 *
+			 * @param string $donate_url Donate URL.
+			 * @param array $plugin Plugin data.
+			 */
+			$plugin['donate_url'] = esc_url(
+				add_query_arg(
+					array(
+						'utm_source'   => $plugin['slug'],
+						'utm_medium'   => 'WP-Dashboard',
+						'utm_campaign' => 'happy-anniversary',
+					),
+					'https://ko-fi.com/iworks'
+				)
+			);
+			/**
 			 * Change plugin data.
 			 *
 			 * Allows to change generated plugin data.
@@ -499,7 +661,12 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 		}
 
 		/**
+		 * Get plugin ID by its slug.
+		 *
 		 * @since 2.0.1
+		 * @param string $slug The plugin slug to search for.
+		 * @return string|WP_Error The plugin ID or WP_Error if not found.
+		 * @access private
 		 */
 		private function get_plugin_id_by_slug( $slug ) {
 			foreach ( $this->stored as $plugin_id => $plugin ) {
@@ -508,6 +675,113 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 				}
 			}
 			return new WP_Error();
+		}
+
+		/**
+		 * Get the URL to install a plugin from the WordPress.org repository.
+		 *
+		 * @since 2.1.0
+		 * @param string $slug The plugin slug to generate install URL for.
+		 * @return string The URL to install the plugin.
+		 * @access private
+		 */
+		private function get_install_plugin_url( $slug ) {
+			return wp_nonce_url(
+				self_admin_url(
+					add_query_arg(
+						array(
+							'action' => 'install-plugin',
+							'plugin' => $slug,
+						),
+						'update.php'
+					)
+				),
+				'install-plugin_' . $slug
+			);
+		}
+
+		/**
+		 * Generate a random future timestamp based on days and weeks.
+		 *
+		 * @since 2.1.5
+		 * @param int $day_min Minimum number of days to add.
+		 * @param int $day_max Maximum number of days to add.
+		 * @param int $week_min Minimum number of weeks to add.
+		 * @param int $week_max Maximum number of weeks to add.
+		 * @return int A future timestamp.
+		 * @access private
+		 */
+		private function get_random_future_timestamp( $day_min = 0, $day_max = 0, $week_min = 0, $week_max = 0 ) {
+			$time = time();
+			/**
+			 * DAY_IN_SECONDS
+			 */
+			$days = 0;
+			if ( 0 < $day_max ) {
+				$days = $this->rate_rand( $day_min, $day_max );
+			}
+			$time += $days * DAY_IN_SECONDS;
+			/**
+			 * WEEK_IN_SECONDS
+			 */
+			$weeks = 0;
+			if ( 0 < $week_max ) {
+				$weeks = $this->rate_rand( $week_min, $week_max );
+			}
+			$time += $weeks * WEEK_IN_SECONDS;
+			/**
+			 * returns
+			 */
+			return $time;
+		}
+
+		/**
+		 * Generate a random number within a range.
+		 *
+		 * Uses wp_rand() if available, falls back to mt_rand().
+		 *
+		 * @since 2.1.5
+		 * @param int|null $min Lower limit (included).
+		 * @param int|null $max Upper limit (included).
+		 * @return int A random number from the specified range.
+		 * @access private
+		 */
+		private function rate_rand( $min = null, $max = null ) {
+			if ( function_exists( 'wp_rand' ) ) {
+				return wp_rand( $min, $max );
+			}
+			return mt_rand( $min, $max );
+		}
+
+		/**
+		 * Get advertising for "OG — Better Share on Social Media" plugin.
+		 *
+		 * @since 2.1.0
+		 */
+		public function filter_get_advertising_og( $data ) {
+			return array(
+				'iworks-adverting-og' => array(
+					'title'    => __( 'OpenGraph', 'iworks-pwa' ),
+					'callback' => array( $this, 'get_advertising_og_content' ),
+					'context'  => 'side',
+					'priority' => 'low',
+				),
+			);
+		}
+
+		/**
+		 * Advertising content for "OG — Better Share on Social Media" plugin.
+		 *
+		 * @since 2.1.0
+		 */
+		public function get_advertising_og_content() {
+			$args = array(
+				'install_plugin_url' => $this->get_install_plugin_url( 'og' ),
+				'plugin_name'        => __( 'OG — Better Share on Social Media', 'iworks-pwa' ),
+				'plugin_wp_home'     => __( 'https://wordpress.org/plugins/og/', 'iworks-pwa' ),
+			);
+			$file = $this->get_file( 'og', 'plugins' );
+			load_template( $file, true, $args );
 		}
 
 		/**
@@ -550,97 +824,6 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 			$content = ob_get_contents();
 			ob_end_clean();
 			return $content;
-		}
-
-		/**
-		 * Get advertising for "OG — Better Share on Social Media" plugin.
-		 *
-		 * @since 2.1.0
-		 */
-		public function filter_get_advertising_og( $data ) {
-			return array(
-				'iworks-adverting-og' => array(
-					'title'    => __( 'OpenGraph', 'iworks-pwa' ),
-					'callback' => array( $this, 'get_advertising_og_content' ),
-					'context'  => 'side',
-					'priority' => 'low',
-				),
-			);
-		}
-
-		/**
-		 * Advertising content for "OG — Better Share on Social Media" plugin.
-		 *
-		 * @since 2.1.0
-		 */
-		public function get_advertising_og_content() {
-			$args = array(
-				'install_plugin_url' => $this->get_install_plugin_url( 'og' ),
-				'plugin_name'        => __( 'OG — Better Share on Social Media', 'iworks-pwa' ),
-				'plugin_wp_home'     => __( 'https://wordpress.org/plugins/og/', 'iworks-pwa' ),
-			);
-			$file = $this->get_file( 'og', 'plugins' );
-			load_template( $file, true, $args );
-		}
-
-		/**
-		 * get admin plugin install url
-		 *
-		 * @since 2.1.0
-		 */
-		private function get_install_plugin_url( $slug ) {
-			return wp_nonce_url(
-				self_admin_url(
-					add_query_arg(
-						array(
-							'action' => 'install-plugin',
-							'plugin' => $slug,
-						),
-						'update.php'
-					)
-				),
-				'install-plugin_' . $slug
-			);
-		}
-
-		/**
-		 * Get random future timstamp
-		 *
-		 * @since 2.1.5
-		 */
-		private function get_random_future_timestamp( $day_min = 0, $day_max = 0, $week_min = 0, $week_max = 0 ) {
-			$time = time();
-			/**
-			 * DAY_IN_SECONDS
-			 */
-			$days = 0;
-			if ( 0 < $day_max ) {
-				$days = $this->rate_rand( $day_min, $day_max );
-			}
-			$time += $days * DAY_IN_SECONDS;
-			/**
-			 * WEEK_IN_SECONDS
-			 */
-			$weeks = 0;
-			if ( 0 < $week_max ) {
-				$weeks = $this->rate_rand( $week_min, $week_max );
-			}
-			$time += $weeks * WEEK_IN_SECONDS;
-			/**
-			 * returns
-			 */
-			return $time;
-		}
-
-		/**
-		 * copy of fnction wp_rand() from wp-includes/pluggable.php
-		 *
-		 */
-		private function rate_rand( $min = null, $max = null ) {
-			if ( function_exists( 'wp_rand' ) ) {
-				return wp_rand( $min, $max );
-			}
-			return mt_rand( $min, $max );
 		}
 	}
 
