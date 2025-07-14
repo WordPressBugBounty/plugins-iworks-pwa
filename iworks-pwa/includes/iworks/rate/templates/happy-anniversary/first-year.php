@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit; // Exit if accessed directly
 <?php
 echo wpautop( esc_html__( 'Wow, it’s already been a whole year since you started using our plugin—thank you so much for being part of our journey! We hope it’s made your work easier and more enjoyable.', 'iworks-pwa' ) );
 echo wpautop( esc_html__( 'If you’ve found our plugin helpful and would like to support its continued development, we’d be incredibly grateful if you’d consider buying us a coffee. Every little bit helps us keep improving and adding new features for awesome users like you!', 'iworks-pwa' ) );
-echo wpautop( '<a class="button" href="' . esc_url( add_query_arg( 'utm_campaign', 'happy-anniversary', $args['donate_url'] ) ) . '">☕ Buy Me a Coffee</a>' );
+echo wpautop( '<a class="button" href="' . esc_url( add_query_arg( 'utm_campaign', 'happy-anniversary', $args['donate_url'] ) ) . '">' . esc_html__( '☕ Buy Me a Coffee', 'iworks-pwa' ) . '</a>' );
 echo wpautop( esc_html__( 'Thank you for your support and for making this community amazing!', 'iworks-pwa' ) );
 echo wpautop(
 	sprintf(
