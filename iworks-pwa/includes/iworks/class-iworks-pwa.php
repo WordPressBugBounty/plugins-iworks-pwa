@@ -49,7 +49,7 @@ abstract class iWorks_PWA {
 	 *
 	 * @since 1.6.2
 	 */
-	protected $version = '1.7.5';
+	protected $version = '1.7.6';
 
 	/**
 	 * Root directory
@@ -298,7 +298,7 @@ abstract class iWorks_PWA {
 			$value = apply_filters(
 				'iworks_pwa_configuration',
 				array(
-					'plugin'           => 'PWA — easy way to Progressive Web App - 1.7.5',
+					'plugin'           => 'PWA — easy way to Progressive Web App - 1.7.6',
 					'id'               => $this->get_configuration_app_id(),
 					'name'             => $this->get_configuration_name(),
 					'short_name'       => $this->get_configuration_short_name(),
@@ -426,9 +426,6 @@ abstract class iWorks_PWA {
 		 * maskable
 		 */
 		$purpose_maskable_has_been_added = false;
-		if ( $maskable ) {
-			l( $maskable );
-		}
 		if ( ! $purpose_maskable_has_been_added ) {
 			$icons[] = array(
 				'src'   => sprintf( '%s/maskable.png', $root ),
@@ -914,7 +911,7 @@ abstract class iWorks_PWA {
 		$cache_name = apply_filters(
 			'iworks_pwa_cache_name',
 			sprintf(
-				'%s/%s/%d/1.7.5',
+				'%s/%s/%d/1.7.6',
 				$this->settings_cache_option_name,
 				$name,
 				$this->options->get_option( 'cache_version' )

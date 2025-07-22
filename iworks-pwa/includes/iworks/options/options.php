@@ -3,7 +3,7 @@
 Class Name: iWorks Options
 Class URI: http://iworks.pl/
 Description: Option class to manage options.
-Version: 3.0.6
+Version: 3.0.7
 Author: Marcin Pietrzak
 Author URI: http://iworks.pl/
 License: GPLv3 or later
@@ -74,7 +74,7 @@ class iworks_options {
 		 * basic setup
 		 */
 		$this->notices              = array();
-		$this->version              = '3.0.6';
+		$this->version              = '3.0.7';
 		$this->option_group         = 'index';
 		$this->option_function_name = null;
 		$this->option_prefix        = null;
@@ -2683,6 +2683,30 @@ class iworks_options {
 				'data-*'       => true,
 				'aria-*'       => true,
 				'id'           => true,
+			),
+			'noscript' => array(
+				'class'  => true,
+				'data-*' => true,
+				'aria-*' => true,
+				'id'     => true,
+			),
+			'iframe'   => array(
+				'allow'             => true,
+				'allowfullscreen'   => true,
+				'allowtransparency' => true,
+				'aria-*'            => true,
+				'class'             => true,
+				'data-*'            => true,
+				'id'                => true,
+				'height'            => true,
+				'name'              => true,
+				'sandbox'           => true,
+				'scrolling'         => true,
+				'src'               => true,
+				'srcdoc'            => true,
+				'style'             => true,
+				'title'             => true,
+				'width'             => true,
 			),
 		);
 		return apply_filters(
