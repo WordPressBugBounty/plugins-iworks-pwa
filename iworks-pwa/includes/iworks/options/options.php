@@ -1,29 +1,31 @@
 <?php
-/*
-Class Name: iWorks Options
-Class URI: http://iworks.pl/
-Description: Option class to manage options.
-Version: 3.0.7
-Author: Marcin Pietrzak
-Author URI: http://iworks.pl/
-License: GPLv3 or later
-License URI: http://www.gnu.org/licenses/gpl-3.0.html
-
-Copyright 2011-2025 Marcin Pietrzak (marcin@iworks.pl)
-
-this program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License, version 3, as
-published by the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-
+/**
+ * iWorks Options Class.
+ *
+ * A comprehensive options management class for WordPress plugins and themes.
+ * Provides a flexible framework for creating admin pages, settings fields,
+ * and managing plugin/theme configuration options.
+ *
+ * @package Iworks\Options
+ * @version 3.1.0
+ * @author  Marcin Pietrzak <marcin@iworks.pl>
+ * @link    https://github.com/iworks/wordpress-options-class
+ * @license GPL-3.0-or-later
+ *
+ * Copyright 2011-2026 Marcin Pietrzak (marcin@iworks.pl)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License, version 3, as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 defined( 'ABSPATH' ) || exit; // Exit if accessed directly
@@ -35,69 +37,128 @@ if ( class_exists( 'iworks_options' ) ) {
 class iworks_options {
 
 	/**
-	 * Core options.
+	 * Plugin version.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	private string $version = '3.1.0';
+
+	/**
+	 * Core options array.
+	 *
+	 * @since 1.0.0
+	 * @var array
+	 */
+	private array $options;
+
+	/**
+	 * Option function name.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	private string $option_function_name = '';
+
+	/**
+	 * Option group name.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	private string $option_group = 'index';
+
+	/**
+	 * Option prefix.
+	 *
+	 * @since 1.0.0
+	 * @var string
+	 */
+	private string $option_prefix = '';
+
+	/**
+	 * Registered page hooks.
+	 *
+	 * @since 1.0.0
+	 * @var array
+	 */
+	private array $pagehooks = array();
+
+	/**
+	 * Enqueued scripts.
+	 *
+	 * @since 1.0.0
+	 * @var array
+	 */
+	private array $scripts_enqueued = array();
+	/**
+	 * Control class mode.
+	 *
+	 * @since 2.6.5
+	 * @var string
+	 */
+	private string $mode = 'plugin';
+
+	/**
+	 * Admin notices array.
+	 *
+	 * @since 1.0.0
+	 * @var array
+	 */
+	public array $notices = array();
+
+	/**
+	 * Plugin identifier.
+	 *
+	 * @since 2.7.3
+	 * @var string
+	 */
+	private string $plugin = '-not-set-';
+
+	/**
+	 * Files to enqueue.
+	 *
+	 * @since 2.8.4
+	 * @var array
+	 */
+	private array $files = array();
+
+	/**
+	 * Logger instance.
+	 *
+	 * @since 3.1.0
+	 * @var iworks_options_logger
+	 */
+	private iworks_options_logger $logger;
+
+	/**
+	 * Constructor.
+	 *
+	 * Sets up the options class with default values and registers hooks.
 	 *
 	 * @since 1.0.0
 	 */
-	private array $options;
-	private $option_function_name;
-	private $option_group;
-	private $option_prefix;
-	private $version;
-	private $pagehooks        = array();
-	private $scripts_enqueued = array();
-	/**
-	 * Controll class mode.
-	 *
-	 * @since 2.6.5
-	 */
-	private $mode = 'plugin';
-
-	public $notices;
-
-	/**
-	 * call from plugin
-	 *
-	 * @since 2.7.3
-	 */
-	private $plugin = '-not-set-';
-
-	/**
-	 * Files to enqueue
-	 *
-	 * @since 2.8.4
-	 */
-	private $files = array();
-
 	public function __construct() {
-		/**
-		 * basic setup
-		 */
-		$this->notices              = array();
-		$this->version              = '3.0.7';
-		$this->option_group         = 'index';
-		$this->option_function_name = null;
-		$this->option_prefix        = null;
-		/**
-		 * afer basic setup
-		 */
+
+		// Setup.
 		$this->files = $this->get_files();
-		/**
-		 * hooks
-		 */
+
+		// Register hooks.
 		add_action( 'admin_enqueue_scripts', array( $this, 'register_styles' ), 0 );
 		add_action( 'admin_head', array( $this, 'admin_head' ) );
 		add_action( 'admin_menu', array( $this, 'admin_menu' ) );
-		add_action( 'admin_notices', array( &$this, 'admin_notices' ) );
+		add_action( 'admin_notices', array( $this, 'admin_notices' ) );
 		add_filter( 'screen_layout_columns', array( $this, 'screen_layout_columns' ), 10, 2 );
+
+		// Include logger class.
+		require_once plugin_dir_path( __FILE__ ) . 'includes/class-iworks-options-logger.php';
+		$this->logger = new iworks_options_logger( $this );
 	}
 
 	/**
 	 * Initialize the options class.
 	 *
 	 * @since 1.0.0
-	 *
-	 * @return void
 	 */
 	public function init() {
 		$this->get_option_array();
@@ -117,11 +178,23 @@ class iworks_options {
 	}
 
 	/**
-	 * Get group
+	 * Get option class mode.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @return string Working mode, possible values "plugin", "theme".
+	 */
+	public function get_mode() {
+		return $this->mode;
+	}
+
+	/**
+	 * Get option group configuration.
 	 *
 	 * @since 2.6.7
 	 *
-	 * @param string $option_group Name of config group.
+	 * @param string|null $option_group Name of config group.
+	 * @return array Group configuration array.
 	 */
 	public function get_group( $option_group = null ) {
 		if ( null === $option_group ) {
@@ -134,8 +207,6 @@ class iworks_options {
 	 * Add admin menu.
 	 *
 	 * @since 1.0.0
-	 *
-	 * @return void
 	 */
 	public function admin_menu() {
 		$data = $this->get_option_array();
@@ -266,6 +337,17 @@ class iworks_options {
 	}
 
 	/**
+	 * Get the option function name.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @return string The option function name.
+	 */
+	public function get_option_function_name() {
+		return $this->option_function_name;
+	}
+
+	/**
 	 * Set the option prefix.
 	 *
 	 * @since 1.0.0
@@ -290,10 +372,6 @@ class iworks_options {
 			$option_group = $this->option_group;
 		}
 		$options = array();
-		if ( array_key_exists( $option_group, $options ) && ! empty( $options[ $option_group ] ) ) {
-			$options = apply_filters( $this->option_function_name, $this->options );
-			return $options[ $option_group ];
-		}
 		if ( is_callable( $this->option_function_name ) ) {
 			$options = apply_filters( $this->option_function_name, call_user_func( $this->option_function_name ) );
 		}
@@ -1090,7 +1168,14 @@ class iworks_options {
 			$args = array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
+				'logger'            => 'no',
 			);
+			/**
+			 * logger
+			 */
+			if ( isset( $option['logger'] ) && $option['logger'] ) {
+				$args['logger'] = $option['logger'];
+			}
 			/**
 			 * set type
 			 */
@@ -1542,7 +1627,16 @@ class iworks_options {
 	}
 
 	/**
-	 * Helpers
+	 * Helper method to create page dropdown.
+	 *
+	 * Creates a WordPress page dropdown select element.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string $name             Option name.
+	 * @param bool   $show_option_none Whether to show a "none" option. Default false.
+	 * @param string $post_type        Post type to show. Default 'page'.
+	 * @return string HTML dropdown markup.
 	 */
 	public function select_page_helper( $name, $show_option_none = false, $post_type = 'page' ) {
 		$args = array(
@@ -1552,9 +1646,21 @@ class iworks_options {
 			'show_option_none' => esc_attr( $show_option_none ),
 			'post_type'        => esc_attr( $post_type ),
 		);
-		return wp_dropdown_pages( $args );
+		return wp_dropdown_pages( $args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
+	/**
+	 * Helper method to create category dropdown.
+	 *
+	 * Creates a WordPress category dropdown select element.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param string     $name             Option name.
+	 * @param bool|null  $hide_empty       Whether to hide empty categories. Default null.
+	 * @param bool       $show_option_none Whether to show a "none" option. Default false.
+	 * @return string HTML dropdown markup.
+	 */
 	public function select_category_helper( $name, $hide_empty = null, $show_option_none = false ) {
 		$args = array(
 			'echo'         => false,
@@ -1620,9 +1726,15 @@ class iworks_options {
 		}
 		global $screen_layout_columns;
 		$data = array();
-		?>
-<div class="wrap iworks_options">
-	<h1><?php echo esc_html( $options['page_title'] ); ?></h1>
+		echo '<div class="wrap iworks_options">';
+		printf( '<h1>%s</h1>', esc_html( $options['page_title'] ) );
+		/**
+		 * Hook before form
+		 *
+		 * @since 3.1.0
+		 */
+		do_action( 'iworks/options/show_page/form/before', $this->get_option_function_name() );
+	?>
 	<form method="post" action="<?php echo esc_url( $url ); ?>" id="<?php echo esc_attr( $this->get_option_name( 'admin_index' ) ); ?>">
 		<?php wp_nonce_field( 'closedpostboxes', 'closedpostboxesnonce', false ); ?>
 		<?php wp_nonce_field( 'meta-box-order', 'meta-box-order-nonce', false ); ?>
@@ -1641,16 +1753,34 @@ class iworks_options {
 			<div id="post-body" class="has-sidebar">
 				<div id="post-body-content" class="has-sidebar-content">
 		<?php
+		/**
+		 * Hook before settings fields
+		 *
+		 * @since 3.1.0
+		 */
+		do_action( 'iworks/options/show_page/settings_fields/before', $this->get_option_function_name() );
 		$this->settings_fields( $option_name );
 		$this->build_options( $option_name );
+		/**
+		 * Hook after build options
+		 *
+		 * @since 3.1.0
+		 */
+		do_action( 'iworks/options/show_page/build_options/after', $this->get_option_function_name() );
 		?>
 				</div>
 			</div>
 			<br class="clear"/>
 		</div>
 	</form>
-</div>
-		<?php
+	<?php
+		/**
+		 * Hook after form
+		 *
+		 * @since 3.1.0
+		 */
+		do_action( 'iworks/options/show_page/form/after', $this->get_option_function_name() );
+		echo '</div>';
 	}
 
 	/**
@@ -1811,6 +1941,16 @@ class iworks_options {
 		return sprintf( 'wrong type: %s', esc_html( $type ) );
 	}
 
+	/**
+	 * Build HTML attributes string from array.
+	 *
+	 * Converts an array of attributes to a properly formatted HTML attribute string.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @param array $args Array of attributes.
+	 * @return string Formatted HTML attributes.
+	 */
 	private function build_field_attributes( $args ) {
 		$atts = '';
 		foreach ( $args as $key => $value ) {
@@ -1832,11 +1972,10 @@ class iworks_options {
 	 * @param string $name  The name.
 	 * @param mixed  $value The value.
 	 * @param array  $args  The arguments.
-	 * @param string $type  The type.
 	 *
 	 * @return void
 	 */
-	private function select( $name, $value = '', $args = array(), $type = 'text' ) {
+	private function select( $name, $value = '', $args = array() ) {
 		/**
 		 * default value
 		 */
@@ -1872,8 +2011,7 @@ class iworks_options {
 			}
 		}
 		$content = sprintf(
-			'<select type="%s" name="%s" %s>',
-			esc_attr( $type ),
+			'<select name="%s" %s>',
 			esc_attr( $name ),
 			$this->build_field_attributes( $args )
 		);
@@ -1955,24 +2093,6 @@ class iworks_options {
 	}
 
 	/**
-	 * Checkbox HTML element.
-	 *
-	 * @since 2.6.4
-	 *
-	 * @param string $name  The name.
-	 * @param mixed  $value The value.
-	 * @param array  $args  The arguments.
-	 *
-	 * @return string The checkbox.
-	 */
-	private function checkbox( $name, $value = '', $args = array() ) {
-		if ( ! empty( $value ) ) {
-			$args['checked'] = 'checked';
-		}
-		return $this->input( $name, $value, $args, __FUNCTION__ );
-	}
-
-	/**
 	 * Switch button element (based on checkbox field).
 	 *
 	 * @since 2.6.4
@@ -1985,100 +2105,6 @@ class iworks_options {
 	 */
 	private function switch_button( $name, $value = '', $args = array() ) {
 		return $this->checkbox( $name, $value, $args );
-	}
-
-	/**
-	 * Text input element.
-	 *
-	 * @since 2.6.4
-	 *
-	 * @param string $name  The name.
-	 * @param mixed  $value The value.
-	 * @param array  $args  The arguments.
-	 *
-	 * @return string The text input.
-	 */
-	private function text( $name, $value = '', $args = array() ) {
-		return $this->input( $name, $value, $args, __FUNCTION__ );
-	}
-
-	/**
-	 * Number input element.
-	 *
-	 * @since 2.6.4
-	 *
-	 * @param string $name  The name.
-	 * @param mixed  $value The value.
-	 * @param array  $args  The arguments.
-	 *
-	 * @return string The number input.
-	 */
-	private function number( $name, $value = '', $args = array() ) {
-		return $this->input( $name, $value, $args, __FUNCTION__ );
-	}
-
-	/**
-	 * Button input element.
-	 *
-	 * @since 2.6.4
-	 *
-	 * @param string $name  The name.
-	 * @param mixed  $value The value.
-	 * @param array  $args  The arguments.
-	 *
-	 * @return string The button input.
-	 */
-	private function button( $name, $value = '', $args = array() ) {
-		return $this->input( $name, $value, $args, __FUNCTION__ );
-	}
-
-	/**
-	 * Submit input element.
-	 *
-	 * @since 2.6.4
-	 *
-	 * @param string $name  The name.
-	 * @param mixed  $value The value.
-	 * @param array  $args  The arguments.
-	 *
-	 * @return string The submit input.
-	 */
-	private function submit( $name, $value = '', $args = array() ) {
-		return $this->input( $name, $value, $args, __FUNCTION__ );
-	}
-
-	/**
-	 * Hidden input element.
-	 *
-	 * @since 2.6.4
-	 *
-	 * @param string $name  The name.
-	 * @param mixed  $value The value.
-	 * @param array  $args  The arguments.
-	 *
-	 * @return string The hidden input.
-	 */
-	private function hidden( $name, $value = '', $args = array() ) {
-		return $this->input( $name, $value, $args, __FUNCTION__ );
-	}
-
-	/**
-	 * Date input element.
-	 *
-	 * @since 2.6.4
-	 *
-	 * @param string $name  The name.
-	 * @param mixed  $value The value.
-	 * @param array  $args  The arguments.
-	 *
-	 * @return string The date input.
-	 */
-	private function date( $name, $value = '', $args = array() ) {
-		if ( ! isset( $args['class'] ) ) {
-			$args['class'] = array();
-		}
-		$args['class'][] = 'datepicker';
-		return $this->input( $name, $value, $args );
 	}
 
 	/**
@@ -2127,52 +2153,6 @@ class iworks_options {
 			$data_string,
 			$value
 		);
-	}
-
-	/**
-	 * Radio input element.
-	 *
-	 * @since 2.6.4
-	 *
-	 * @param string $name  The name.
-	 * @param mixed  $value The value.
-	 * @param array  $args  The arguments.
-	 *
-	 * @return string The radio input.
-	 */
-	private function radio( $name, $value = '', $args = array() ) {
-		$radio   = '';
-		$options = $args['options'];
-		unset( $args['options'] );
-		/**
-		 * default value
-		 */
-		if ( isset( $args['default'] ) && '' == $value ) {
-			$value = $args['default'];
-		}
-		$i = 0;
-		foreach ( $options as $option_value => $input ) {
-			$id     = sprintf( '%s%d', $name, $i++ );
-			$radio .= sprintf(
-				'<li class="%s"><label for="%s"><input type="radio" name="%s" value="%s"%s id="%s"/> %s</label>',
-				esc_attr( sanitize_title( $value ) ),
-				esc_attr( $id ),
-				esc_attr( $name ),
-				esc_attr( $option_value ),
-				checked( $option_value, $value, false ),
-				esc_attr( $id ),
-				esc_html( is_string( $input ) ? $input : $input['label'] )
-			);
-			if ( isset( $input['description'] ) ) {
-				$radio .= '<br>';
-				$radio .= $this->description( '', '', array( 'description' => wp_kses_post( $input['description'] ) ) );
-			}
-			$radio .= '</li>';
-		}
-		if ( $radio ) {
-			$radio = sprintf( '<ul>%s</ul>', $radio );
-		}
-		return $radio;
 	}
 
 	/**
@@ -2405,7 +2385,7 @@ class iworks_options {
 				'deps'               => array( 'jquery', 'switch_button', 'jquery-ui-tabs' ),
 				'wp_localize_script' => array(
 					'buttons' => array(
-						'select_media' => __( 'Select Image', 'iworks-pwa' ),
+						'select_media' => esc_html__( 'Select Image', 'iworks-pwa' ),
 					),
 				),
 			),
@@ -2756,5 +2736,262 @@ class iworks_options {
 	public function get_pagehooks() {
 		return $this->pagehooks;
 	}
+
+
+	/**
+	 * HTML INPUT ELEMENTS
+	 */
+
+	/**
+	 * Button input element.
+	 *
+	 * @since 2.6.4
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The button input.
+	 */
+	private function button( $name, $value = '', $args = array() ) {
+		return $this->input( $name, $value, $args, __FUNCTION__ );
+	}
+
+	/**
+	 * Checkbox HTML element.
+	 *
+	 * @since 2.6.4
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The checkbox.
+	 */
+	private function checkbox( $name, $value = '', $args = array() ) {
+		if ( ! empty( $value ) ) {
+			$args['checked'] = 'checked';
+		}
+		return $this->input( $name, $value, $args, __FUNCTION__ );
+	}
+
+	/**
+	 * Input type="color" element.
+	 *
+	 * @since 3.0.9
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The number input.
+	 */
+	private function color( $name, $value = '', $args = array() ) {
+		return $this->input( $name, $value, $args, __FUNCTION__ );
+	}
+
+	/**
+	 * Date input element.
+	 *
+	 * @since 2.6.4
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The date input.
+	 */
+	private function date( $name, $value = '', $args = array() ) {
+		if ( ! isset( $args['class'] ) ) {
+			$args['class'] = array();
+		}
+		$args['class'][] = 'datepicker';
+		return $this->input( $name, $value, $args );
+	}
+
+	/**
+	 * Input type="email" element.
+	 *
+	 * @since 3.0.9
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The number input.
+	 */
+	private function email( $name, $value = '', $args = array() ) {
+		return $this->input( $name, $value, $args, __FUNCTION__ );
+	}
+
+	/**
+	 * Hidden input element.
+	 *
+	 * @since 2.6.4
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The hidden input.
+	 */
+	private function hidden( $name, $value = '', $args = array() ) {
+		return $this->input( $name, $value, $args, __FUNCTION__ );
+	}
+
+	/**
+	 * Input type="month" element.
+	 *
+	 * @since 3.0.9
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The number input.
+	 */
+	private function month( $name, $value = '', $args = array() ) {
+		return $this->input( $name, $value, $args, __FUNCTION__ );
+	}
+
+	/**
+	 * Number input element.
+	 *
+	 * @since 2.6.4
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The number input.
+	 */
+	private function number( $name, $value = '', $args = array() ) {
+		return $this->input( $name, $value, $args, __FUNCTION__ );
+	}
+
+	/**
+	 * Radio input element.
+	 *
+	 * @since 2.6.4
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The radio input.
+	 */
+	private function radio( $name, $value = '', $args = array() ) {
+		$radio   = '';
+		$options = $args['options'];
+		unset( $args['options'] );
+		/**
+		 * default value
+		 */
+		if ( isset( $args['default'] ) && '' == $value ) {
+			$value = $args['default'];
+		}
+		$i = 0;
+		foreach ( $options as $option_value => $input ) {
+			$id     = sprintf( '%s%d', $name, $i++ );
+			$radio .= sprintf(
+				'<li class="%s"><label for="%s"><input type="radio" name="%s" value="%s"%s id="%s"/> %s</label>',
+				esc_attr( sanitize_title( $value ) ),
+				esc_attr( $id ),
+				esc_attr( $name ),
+				esc_attr( $option_value ),
+				checked( $option_value, $value, false ),
+				esc_attr( $id ),
+				esc_html( is_string( $input ) ? $input : $input['label'] )
+			);
+			if ( isset( $input['description'] ) ) {
+				$radio .= '<br>';
+				$radio .= $this->description( '', '', array( 'description' => wp_kses_post( $input['description'] ) ) );
+			}
+			$radio .= '</li>';
+		}
+		if ( $radio ) {
+			$radio = sprintf( '<ul>%s</ul>', $radio );
+		}
+		return $radio;
+	}
+
+	/**
+	 * Submit input element.
+	 *
+	 * @since 2.6.4
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The submit input.
+	 */
+	private function submit( $name, $value = '', $args = array() ) {
+		return $this->input( $name, $value, $args, __FUNCTION__ );
+	}
+
+	/**
+	 * Input type="tel" element.
+	 *
+	 * @since 3.0.9
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The number input.
+	 */
+	private function tel( $name, $value = '', $args = array() ) {
+		return $this->input( $name, $value, $args, __FUNCTION__ );
+	}
+
+	/**
+	 * Text input element.
+	 *
+	 * @since 2.6.4
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The text input.
+	 */
+	private function text( $name, $value = '', $args = array() ) {
+		return $this->input( $name, $value, $args, __FUNCTION__ );
+	}
+
+	/**
+	 * Input type="url" element.
+	 *
+	 * @since 3.0.9
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The number input.
+	 */
+	private function url( $name, $value = '', $args = array() ) {
+		return $this->input( $name, $value, $args, __FUNCTION__ );
+	}
+
+	/**
+	 * Input type="week" element.
+	 *
+	 * @since 3.0.9
+	 *
+	 * @param string $name  The name.
+	 * @param mixed  $value The value.
+	 * @param array  $args  The arguments.
+	 *
+	 * @return string The number input.
+	 */
+	private function week( $name, $value = '', $args = array() ) {
+		return $this->input( $name, $value, $args, __FUNCTION__ );
+	}
+
+	/**
+	 * @TODO: datetime-local, file, password, range, reset, search, time
+	 */
 }
 

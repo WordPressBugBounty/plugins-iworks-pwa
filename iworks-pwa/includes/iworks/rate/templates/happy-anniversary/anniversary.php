@@ -12,19 +12,17 @@ defined( 'ABSPATH' ) || exit; // Exit if accessed directly
 	data-nonce="<?php echo esc_attr( wp_create_nonce( 'iworks-rate' ) ); ?>"
 >
 	<div class="<?php echo esc_attr( implode( ' ', $args['classes'] ) ); ?>">
-		<h4>
-		<?php
+		<h4><?php
 		if ( ! empty( $args['logo'] ) ) {
 			printf( '<span class="iworks-rate-logo" style="background-image:url(%s)"></span>', esc_url( $args['logo'] ) ); }
-		?>
-			<span><?php printf( '<strong>%s</strong>', esc_html( $args['title'] ) ); ?></span></h4>
+		?><span><?php printf( '<strong>%s</strong>', esc_html( $args['title'] ) ); ?></span></h4>
 		<p style="margin-top: 1em; font-size: 1.5em;"><strong><?php esc_html_e( '🎉 Happy Anniversary! 🎉', 'iworks-pwa' ); ?></strong></p>
 <?php
-echo wpautop( esc_html__( 'Wow, it’s already been a whole year since you’ve been using our plugin—thank you so much for being part of our journey! We truly appreciate your support and hope the plugin has made your work easier and more enjoyable.', 'iworks-pwa' ) );
-echo wpautop( esc_html__( 'If you’ve found our plugin helpful and would like to support its continued development, we’d be incredibly grateful if you’d consider buying us a coffee. Every little bit helps us keep improving and adding new features for awesome users like you!', 'iworks-pwa' ) );
-echo wpautop( '<a class="button" href="' . esc_url( add_query_arg( 'utm_campaign', 'happy-anniversary', $args['donate_url'] ) ) . '">' . esc_html__( '☕ Buy Me a Coffee', 'iworks-pwa' ) . '</a>' );
-echo wpautop( esc_html__( 'Thank you for your support and for making this community amazing!', 'iworks-pwa' ) );
-echo wpautop(
+echo wp_kses_post( wpautop( esc_html__( 'Wow, it’s already been a whole year since you’ve been using our plugin—thank you so much for being part of our journey! We truly appreciate your support and hope the plugin has made your work easier and more enjoyable.', 'iworks-pwa' ) ) );
+echo wp_kses_post( wpautop( esc_html__( 'If you’ve found our plugin helpful and would like to support its continued development, we’d be incredibly grateful if you’d consider buying us a coffee. Every little bit helps us keep improving and adding new features for awesome users like you!', 'iworks-pwa' ) ) );
+echo wp_kses_post( wpautop( '<a class="button" href="' . esc_url( add_query_arg( 'utm_campaign', 'happy-anniversary', $args['donate_url'] ) ) . '">' . esc_html__( '☕ Buy Me a Coffee', 'iworks-pwa' ) . '</a>' ) );
+echo wp_kses_post( wpautop( esc_html__( 'Thank you for your support and for making this community amazing!', 'iworks-pwa' ) ) );
+echo wp_kses_post(
 	sprintf(
 		'%s<br>%s<br>%s',
 		esc_html__( 'With gratitude', 'iworks-pwa' ),

@@ -1,9 +1,35 @@
 <?php
+/*
+Class Name: iWorks Rate
+Class URI: https://github.com/iworks/iworks-rate
+Description: Dashboard Notification module.
+Version: 2.3.1
+Author: Marcin Pietrzak
+Author URI: http://iworks.pl/
+License: GPLv3 or later
+License URI: http://www.gnu.org/licenses/gpl-3.0.html
+
+Copyright 2017-2025 Marcin Pietrzak (marcin@iworks.pl)
+
+this program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License, version 3, as
+published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
 defined( 'ABSPATH' ) || exit; // Exit if accessed directly
 /**
  * iWorks_Rate - Dashboard Notification module.
  *
- * @version 2.3.1
+ * @version 2.3.2
  * @author  iworks (Marcin Pietrzak)
  *
  */
@@ -16,7 +42,7 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 		 * @since 1.0.1
 		 * @var   string
 		 */
-		private $version = '2.3.1';
+		private $version = '2.3.2';
 
 		/**
 		 * $wpdb->options field name.
@@ -295,7 +321,7 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 			/**
 			 * get plugin ID
 			 */
-			$nonce_value = sanitize_text_field( filter_input( INPUT_POST, '_wpnonce', FILTER_DEFAULT ) );
+			$nonce_value = sanitize_text_field( wp_unslash( filter_input( INPUT_POST, '_wpnonce', FILTER_DEFAULT ) ) );
 			if ( ! wp_verify_nonce( $nonce_value, 'iworks-rate' ) ) {
 				wp_send_json_error();
 			}
@@ -364,7 +390,17 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 			if ( ! isset( $this->stored[ $plugin_id ] ) ) {
 				return;
 			}
-			++$this->stored[ $plugin_id ]['last_anniversary'];
+			/**
+			 * set proper anniversary value
+			 *
+			 * @since 2.3.2
+			 */
+			$max   = floor( $this->stored[ $plugin_id ]['last_anniversary_days'] / 365 ) + 1;
+			$value = $this->stored[ $plugin_id ]['last_anniversary'] + 1;
+			$this->stored[ $plugin_id ]['last_anniversary'] = max( $max, $value );
+			/**
+			 * save data
+			 */
 			$this->store_data();
 		}
 
@@ -761,7 +797,7 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 		public function filter_get_advertising_og( $data ) {
 			return array(
 				'iworks-adverting-og' => array(
-					'title'    => __( 'OpenGraph', 'iworks-pwa' ),
+					'title'    => esc_html__( 'OpenGraph', 'iworks-pwa' ),
 					'callback' => array( $this, 'get_advertising_og_content' ),
 					'context'  => 'side',
 					'priority' => 'low',
@@ -777,8 +813,8 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 		public function get_advertising_og_content() {
 			$args = array(
 				'install_plugin_url' => $this->get_install_plugin_url( 'og' ),
-				'plugin_name'        => __( 'OG — Better Share on Social Media', 'iworks-pwa' ),
-				'plugin_wp_home'     => __( 'https://wordpress.org/plugins/og/', 'iworks-pwa' ),
+				'plugin_name'        => esc_html__( 'OG — Better Share on Social Media', 'iworks-pwa' ),
+				'plugin_wp_home'     => esc_url( __( 'https://wordpress.org/plugins/og/', 'iworks-pwa' ) ),
 			);
 			$file = $this->get_file( 'og', 'plugins' );
 			load_template( $file, true, $args );

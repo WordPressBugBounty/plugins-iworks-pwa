@@ -3,8 +3,8 @@ Contributors: iworks
 Donate link: https://ko-fi.com/iworks?utm_source=iworks-pwa&utm_medium=readme-donate
 Tags: PWA, Progressive Web Application, manifest.json, offline
 Requires at least: 6.0
-Tested up to: 6.8
-Stable tag: 1.7.8
+Tested up to: 7.0
+Stable tag: 1.7.9
 Requires PHP: 8.0
 License: GPLv3 or later
 
@@ -108,6 +108,10 @@ A2HS is supported in all mobile browsers, except iOS web view. It's also support
 
 Project maintained on GitHub at [iworks/iworks-pwa](https://github.com/iworks/iworks-pwa).
 
+= 1.7.9 (2026-06-17) =
+* **Dependencies**: Updated the [iWorks Options](https://github.com/iworks/wordpress-options-class) module to version 3.1.0.
+* **Dependencies**: Updated the [iWorks Rate](https://github.com/iworks/iworks-rate) module to version 2.3.2.
+
 = 1.7.8 (2025-09-01) =
 * **Dependencies**: Updated the [iWorks Options](https://github.com/iworks/wordpress-options-class) module to version 3.0.8.
 * **Bug Fix**: Fixed an issue with emppty WP_Screen object. Props for [symington](https://wordpress.org/support/users/symington/).
@@ -134,21 +138,21 @@ Project maintained on GitHub at [iworks/iworks-pwa](https://github.com/iworks/iw
 
 
 = 1.7.3 (2025-05-15) =
-* Updated the [iWorks Options](https://github.com/iworks/wordpress-options-class) module to version 3.0.1.
-* Added description for options: "Cache Version" and "Cache Time"
+* **Dependencies**: Updated the [iWorks Options](https://github.com/iworks/wordpress-options-class) module to version 3.0.1.
+* **New**: Added description for options: "Cache Version" and "Cache Time"
 
 = 1.7.2 (2025-05-14) =
-* Added `iworks_pwa_cache_name` filter to allow modification of cache keys.
-* Centralized transient handling with new set_transient method.
-* Updated all direct set_transient calls to use the new method.
-* Improved cache key generation to use plugin version.
-* Added comprehensive PHPDoc for the new set_transient method.
+* **New**: Added `iworks_pwa_cache_name` filter to allow modification of cache keys.
+* **Code Quality**: Centralized transient handling with new set_transient method.
+* **Code Quality**: Updated all direct set_transient calls to use the new method.
+* **Code Quality**: Improved cache key generation to use plugin version.
+* **Code Quality**: Added comprehensive PHPDoc for the new set_transient method.
 
 = 1.7.1 (2025-05-05) =
-* Added a nonce check to the menu-saving action for improved security.
-* Added escaping functions in multiple areas to enhance security.
-* Replaced the `unlink()` function with `wp_delete_file()` for better compatibility and safety.
-* Updated the [iWorks Options](https://github.com/iworks/wordpress-options-class) module to version 3.0.0.
+* **Security**: Added a nonce check to the menu-saving action for improved security.
+* **Security**: Added escaping functions in multiple areas to enhance security.
+* **Security**: Replaced the `unlink()` function with `wp_delete_file()` for better compatibility and safety.
+* **Dependencies**: Updated the [iWorks Options](https://github.com/iworks/wordpress-options-class) module to version 3.0.0.
 
 = 1.7.0 (2025-03-13) =
 * Updated the [iWorks Options](https://github.com/iworks/wordpress-options-class) module to version 2.9.8.

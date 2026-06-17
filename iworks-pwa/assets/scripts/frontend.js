@@ -1,6 +1,6 @@
-/*! PWA — easy way to Progressive Web App - 1.7.8
+/*! PWA — easy way to Progressive Web App - 1.7.9
  * https://github.com/iworks/iworks-pwa
- * Copyright (c) 2025; * Licensed GPL-3.0 */
+ * Copyright (c) 2026; * Licensed GPL-3.0 */
 window.addEventListener('load', function(event) {
 	var iworks_pwa_deferred_prompt;
 	const iworks_pwa_add_button = document.querySelector('#iworks-pwa-add-button');
