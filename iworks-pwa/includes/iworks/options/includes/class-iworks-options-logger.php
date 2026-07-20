@@ -185,9 +185,9 @@ class iworks_options_logger {
                         $data,
                         array(
                             'plugin_name' => 'iworks-pwa',
-                            'plugin_version' => '1.7.9',
-                            'plugin_url' => 'PLUGIN_URL',
-                            'plugin_author' => sprintf( '<a href="%s">%s</a>', esc_url( 'AUTHOR_URL' ), esc_html( 'Marcin Pietrzak' ) ),
+                            'plugin_version' => '1.8.0',
+                            'plugin_url' => 'https://github.com/iworks/iworks-pwa',
+                            'plugin_author' => sprintf( '<a href="%s">%s</a>', esc_url( 'http://iworks.pl/' ), esc_html( 'Marcin Pietrzak' ) ),
                         )
                     );
                     break;
