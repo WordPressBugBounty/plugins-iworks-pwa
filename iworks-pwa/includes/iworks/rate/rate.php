@@ -3,7 +3,7 @@
 Class Name: iWorks Rate
 Class URI: https://github.com/iworks/iworks-rate
 Description: Dashboard Notification module.
-Version: 2.3.1
+Version: 1.9.0
 Author: Marcin Pietrzak
 Author URI: http://iworks.pl/
 License: GPLv3 or later
@@ -786,6 +786,7 @@ if ( ! class_exists( 'iworks_rate' ) ) {
 			if ( function_exists( 'wp_rand' ) ) {
 				return wp_rand( $min, $max );
 			}
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.rand_mt_rand -- fallback when wp_rand() is unavailable.
 			return mt_rand( $min, $max );
 		}
 

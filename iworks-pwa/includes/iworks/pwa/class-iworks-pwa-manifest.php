@@ -60,6 +60,12 @@ class iWorks_PWA_manifest extends iWorks_PWA {
 			$this->version,
 			true
 		);
+		wp_register_style(
+			$this->options->get_option_name( 'update-toast' ),
+			$this->url . '/assets/styles/frontend/update-toast.css',
+			array(),
+			$this->version
+		);
 		$data = array(
 			'serviceWorkerUri' => add_query_arg(
 				'version',
@@ -71,6 +77,8 @@ class iWorks_PWA_manifest extends iWorks_PWA {
 				)
 			),
 			'root'             => $this->url . '/assets/pwa/',
+			'updateMessage'    => apply_filters( 'iworks_pwa_update_toast_message', __( 'New version available.', 'iworks-pwa' ) ),
+			'updateButtonLabel' => apply_filters( 'iworks_pwa_update_toast_button_label', __( 'Refresh', 'iworks-pwa' ) ),
 		);
 		wp_localize_script(
 			$this->get_name( __CLASS__ ),
@@ -86,6 +94,7 @@ class iWorks_PWA_manifest extends iWorks_PWA {
 	 */
 	public function enqueue() {
 		wp_enqueue_script( $this->get_name( __CLASS__ ) );
+		wp_enqueue_style( $this->options->get_option_name( 'update-toast' ) );
 	}
 
 	public function parse_request() {
@@ -93,7 +102,8 @@ class iWorks_PWA_manifest extends iWorks_PWA {
 			! isset( $_SERVER['REQUEST_URI'] ) ) {
 			return;
 		}
-		$uri = remove_query_arg( array_keys( $_GET ), esc_url( $_SERVER['REQUEST_URI'] ) );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only request routing for public endpoints; no state changes.
+		$uri = remove_query_arg( array_keys( $_GET ), esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) );
 		/**
 		 * manifest.json
 		 */
@@ -119,6 +129,7 @@ class iWorks_PWA_manifest extends iWorks_PWA {
 
 	private function print_iworks_pwa_offline() {
 		header( 'Content-Type: text/html' );
+		header( 'X-Content-Type-Options: nosniff' );
 		$data = apply_filters( 'iworks_pwa_offline_file', null );
 		if ( empty( $data ) ) {
 			$data = file_get_contents( $this->root . '/assets/pwa/offline.html' );
@@ -143,21 +154,81 @@ class iWorks_PWA_manifest extends iWorks_PWA {
 		$svg  = '<svg viewBox="0, 0, 24, 24"><path d="M23.64 7c-.45-.34-4.93-4-11.64-4-1.5 0-2.89.19-4.15.48L18.18 13.8 23.64 7zm-6.6 8.22L3.27 1.44 2 2.72l2.05 2.06C1.91 5.76.59 6.82.36 7l11.63 14.49.01.01.01-.01 3.9-4.86 3.32 3.32 1.27-1.27-3.46-3.46z"></path></svg>';
 		$data = preg_replace( '/%SVG%/', apply_filters( 'iworks_pwa_offline_svg', $svg ), $data );
 		/**
-		 * print
+		 * print — the offline page template is plugin-controlled HTML built
+		 * from filtered, escaped fragments. wp_kses_post() would strip the
+		 * <style>, <svg>, <head> and <html> tags the template depends on,
+		 * so a template-specific allow-list is used instead.
 		 */
-		echo $data;
+		$allowed_html = array(
+			'html'   => array(
+				'lang' => true,
+			),
+			'head'   => array(),
+			'meta'   => array(
+				'charset'     => true,
+				'http-equiv'  => true,
+				'content'     => true,
+				'name'        => true,
+				'generator'   => true,
+				'robots'      => true,
+				'viewport'    => true,
+			),
+			'title'  => array(),
+			'style'  => array(
+				'type' => true,
+			),
+			'body'   => array(),
+			'h1'     => array(),
+			'div'    => array(
+				'class' => true,
+			),
+			'svg'    => array(
+				'viewbox' => true,
+				'xmlns'   => true,
+				'width'   => true,
+				'height'  => true,
+				'fill'    => true,
+				'role'    => true,
+			),
+			'path'   => array(
+				'd' => true,
+			),
+			'p'      => array(),
+			'a'      => array(
+				'href'   => true,
+				'title'  => true,
+				'target' => true,
+				'rel'    => true,
+			),
+			'strong' => array(),
+			'em'     => array(),
+			'br'     => array(),
+			'ul'     => array(),
+			'ol'     => array(),
+			'li'     => array(),
+			'img'    => array(
+				'src' => true,
+				'alt' => true,
+			),
+		);
+		echo wp_kses( $data, $allowed_html );
 		exit;
 	}
 
 	private function helper_join_strings( $string ) {
-		return sprintf(
-			"'%s'",
-			preg_replace( "/'/", "\\'", $string )
-		);
+		/**
+		 * Escape backslashes first, then quotes — otherwise a value ending
+		 * with a backslash could break out of the JS string literal.
+		 */
+		$escaped = str_replace( '\\', '\\\\', $string );
+		$escaped = str_replace( "'", "\\'", $escaped );
+		return sprintf( "'%s'", $escaped );
 	}
 
 	private function print_iworks_pwa_service_worker_js() {
 		header( 'Content-Type: text/javascript' );
+		header( 'X-Content-Type-Options: nosniff' );
+		header( 'Cache-Control: no-cache' );
 		$set = array(
 			home_url(),
 		);
@@ -180,9 +251,60 @@ class iWorks_PWA_manifest extends iWorks_PWA {
 			),
 			'offline_urls_set' => $set,
 			'offline_url'      => 'iworks-pwa-offline',
+			'cache_strategy'   => $this->get_cache_strategy(),
+			'excluded_patterns' => $this->get_excluded_patterns(),
 		);
 		load_template( $file, true, $args );
 		exit;
+	}
+
+	/**
+	 * Get the runtime cache strategy for navigations.
+	 *
+	 * @since 1.9.0
+	 */
+	private function get_cache_strategy() {
+		$strategy = $this->options->get_option( 'cache_strategy' );
+		if ( empty( $strategy ) ) {
+			$strategy = 'network-first';
+		}
+		return apply_filters( 'iworks_pwa_cache_strategy', $strategy );
+	}
+
+	/**
+	 * Build the list of regex patterns for URLs the service worker must never
+	 * handle (admin-defined plus filtered).
+	 *
+	 * @since 1.9.0
+	 */
+	private function get_excluded_patterns() {
+		$patterns = array();
+		$defined  = $this->options->get_option( 'cache_exclude_urls' );
+		if ( ! empty( $defined ) && is_string( $defined ) ) {
+			foreach ( preg_split( '/\r\n|\r|\n/', $defined ) as $line ) {
+				$line = trim( $line );
+				if ( '' !== $line ) {
+					$patterns[] = str_replace( '"', '', $line );
+				}
+			}
+		}
+		$patterns = apply_filters( 'iworks_pwa_cache_excluded_patterns', $patterns );
+		$patterns = array_values( array_unique( $patterns ) );
+		if ( empty( $patterns ) ) {
+			return '';
+		}
+		return implode(
+			', ',
+			array_map(
+				array( $this, 'helper_join_strings' ),
+				array_map(
+					function ( $pattern ) {
+						return str_replace( '/', '\\/', $pattern );
+					},
+					$patterns
+				)
+			)
+		);
 	}
 
 	/**
@@ -218,6 +340,7 @@ class iWorks_PWA_manifest extends iWorks_PWA {
 		 */
 		$data['id'] = $this->get_configuration_app_id();
 		header( 'Content-Type: application/json' );
+		header( 'X-Content-Type-Options: nosniff' );
 		/**
 		 * remove empty values
 		 *
@@ -263,10 +386,11 @@ class iWorks_PWA_manifest extends iWorks_PWA {
 				}
 			}
 			/**
-			 * display_override
+			 * display_override — the spec requires an array of fallback
+			 * display modes, most preferred first.
 			 */
 			if ( ! empty( $this->options->get_option( 'experimental_display_override' ) ) ) {
-				$data['display_override'] = $this->options->get_option( 'experimental_display_override' );
+				$data['display_override'] = array( $this->options->get_option( 'experimental_display_override' ) );
 			}
 		}
 		/**
@@ -420,7 +544,7 @@ class iWorks_PWA_manifest extends iWorks_PWA {
 		?>
 <p class="field-short-name description description-wide">
 	<label for="edit-menu-item-short-name-<?php echo esc_attr( $item_id ); ?>">
-		<?php _e( 'Short Name (PWA)', 'iworks-pwa' ); ?><br />
+		<?php esc_html_e( 'Short Name (PWA)', 'iworks-pwa' ); ?><br />
 		<input type="text" id="edit-menu-item-a-short-name-<?php echo esc_attr( $item_id ); ?>" class="widefat code edit-menu-item-short-name" name="menu-item-short-name[<?php echo esc_attr( $item_id ); ?>]" value="<?php echo esc_attr( $value ); ?>" />
 	</label>
 </p>
@@ -436,18 +560,16 @@ class iWorks_PWA_manifest extends iWorks_PWA {
 		if ( ! wp_verify_nonce( filter_input( INPUT_POST, 'update-nav-menu-nonce' ), 'update-nav_menu' ) ) {
 			return;
 		}
-		if ( ! isset( $_POST['menu-item-short-name'] ) ) {
+		if ( ! isset( $_POST['menu-item-short-name'] ) || ! is_array( $_POST['menu-item-short-name'] ) ) {
 			return;
 		}
-		if ( ! is_array( $_POST['menu-item-short-name'] ) ) {
-			return;
-		}
-		foreach ( $_POST['menu-item-short-name'] as $post_id => $value ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nonce verified above via wp_verify_nonce( filter_input(...) ).
+		foreach ( wp_unslash( $_POST['menu-item-short-name'] ) as $post_id => $value ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitized per element below with sanitize_text_field().
 			$post_id = intval( $post_id );
 			if ( 1 > $post_id ) {
 				continue;
 			}
-			$value = esc_html( $value );
+			$value = sanitize_text_field( $value );
 			if ( empty( $value ) ) {
 				delete_post_meta( $post_id, $this->meta_option_name_sort_menu_name );
 				continue;

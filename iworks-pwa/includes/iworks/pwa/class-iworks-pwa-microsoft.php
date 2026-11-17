@@ -131,11 +131,16 @@ class iWorks_PWA_Microsoft extends iWorks_PWA {
 			! isset( $_SERVER['REQUEST_URI'] ) ) {
 			return;
 		}
-		$uri = remove_query_arg( array_keys( $_GET ), $_SERVER['REQUEST_URI'] );
-		if ( $this->ieconfig_filename !== $_SERVER['REQUEST_URI'] ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only request routing for a public XML endpoint; no state changes.
+		$uri = remove_query_arg(
+			array_keys( $_GET ), // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only request routing, no state changes.
+			esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitized with esc_url_raw().
+		);
+		if ( $this->ieconfig_filename !== wp_unslash( $_SERVER['REQUEST_URI'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput -- exact string comparison for public endpoint routing, never printed.
 			return;
 		}
 		header( 'Content-type: text/xml' );
+		header( 'X-Content-Type-Options: nosniff' );
 		echo '<' . '?xml version="1.0" encoding="utf-8"?' . '>';
 		echo PHP_EOL;
 		echo '<browserconfig>';
@@ -177,7 +182,8 @@ class iWorks_PWA_Microsoft extends iWorks_PWA {
 		$cache_key = $this->get_cache_name( 'head_microsoft' );
 		$value     = get_transient( $cache_key );
 		if ( ! empty( $value ) ) {
-			echo $value;
+			// Cached HTML built below from escaped fragments.
+			echo wp_kses_post( $value );
 			return;
 		}
 		/**
@@ -276,6 +282,7 @@ class iWorks_PWA_Microsoft extends iWorks_PWA {
 		 * @since 1.4.3
 		 */
 		set_transient( $cache_key, $content, DAY_IN_SECONDS );
-		echo $content;
+		// Built above from escaped fragments only.
+		echo wp_kses_post( $content );
 	}
 }

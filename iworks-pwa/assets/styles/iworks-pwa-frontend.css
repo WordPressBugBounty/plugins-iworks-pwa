@@ -1,3 +1,8 @@
+/*! PWA — easy way to Progressive Web App - v1.9.0
+ * https://github.com/iworks/iworks-pwa
+ * Copyright (c) 2026
+ * Licensed GPL-3.0
+ */
 #iworks-pwa-add-button-container {
   text-align: center;
 }
@@ -10,4 +15,33 @@
 }
 #iworks-pwa-add-button:hover {
   background-color: #ddd;
+}
+#iworks-pwa-update-toast {
+  position: fixed;
+  right: 1em;
+  bottom: 1em;
+  z-index: 99999;
+  display: flex;
+  gap: 0.75em;
+  align-items: center;
+  padding: 0.75em 1em;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 0.25em;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  font-size: 0.9em;
+}
+#iworks-pwa-update-toast .iworks-pwa-update-toast__message {
+  color: #1d2327;
+}
+#iworks-pwa-update-toast .iworks-pwa-update-toast__button {
+  padding: 0.35em 1em;
+  border: 1px solid #2271b1;
+  border-radius: 0.2em;
+  background-color: #2271b1;
+  color: #fff;
+  cursor: pointer;
+}
+#iworks-pwa-update-toast .iworks-pwa-update-toast__button:hover {
+  background-color: #135e96;
 }
